@@ -537,7 +537,6 @@
 		0516FA3B1A15563400B4EBED /* ASLog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ASLog.h; sourceTree = "<group>"; };
 		0516FA3E1A1563D200B4EBED /* ASMultiplexImageNode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ASMultiplexImageNode.h; sourceTree = "<group>"; };
 		0516FA3F1A1563D200B4EBED /* ASMultiplexImageNode.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ASMultiplexImageNode.mm; sourceTree = "<group>"; };
-		051943121A1575630030A7D0 /* AssetsLibrary.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AssetsLibrary.framework; path = System/Library/Frameworks/AssetsLibrary.framework; sourceTree = SDKROOT; };
 		051943141A1575670030A7D0 /* Photos.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Photos.framework; path = System/Library/Frameworks/Photos.framework; sourceTree = SDKROOT; };
 		052EE0651A159FEF002C6279 /* ASMultiplexImageNodeTests.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ASMultiplexImageNodeTests.mm; sourceTree = "<group>"; };
 		052EE06A1A15A0D8002C6279 /* TestResources */ = {isa = PBXFileReference; lastKnownFileType = folder; path = TestResources; sourceTree = "<group>"; };
