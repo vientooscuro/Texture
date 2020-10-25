@@ -540,11 +540,14 @@ ASSynthesizeLockingMethodsWithMutex(__instanceLock__);
         || [_viewClass isSubclassOfClass:[UIVisualEffectView class]]) {
       self.opaque = NO;
     }
+#if TARGET_OS_MACCATALYST
       
+#else
     // CAEAGLLayer
     if([[view.layer class] isSubclassOfClass:[CAEAGLLayer class]]){
       _flags.canClearContentsOfLayer = NO;
     }
+#endif
   }
 
   return view;
