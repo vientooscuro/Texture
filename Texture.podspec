@@ -82,7 +82,7 @@ Pod::Spec.new do |spec|
 
   spec.subspec 'AssetsLibrary' do |assetslib|
     assetslib.frameworks = 'AssetsLibrary'
-    assetslib.xcconfig = { 'GCC_PREPROCESSOR_DEFINITIONS' => '$(inherited) AS_USE_ASSETS_LIBRARY=1' }
+    assetslib.xcconfig = { 'GCC_PREPROCESSOR_DEFINITIONS' => '$(inherited) AS_USE_ASSETS_LIBRARY=0' }
     assetslib.dependency 'Texture/Core'
   end
 
