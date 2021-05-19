@@ -683,7 +683,8 @@ typedef void(^ASMultiplexImageLoadCompletionBlock)(UIImage *image, id imageIdent
   // We'll drop support very soon.
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-  ALAssetsLibrary *assetLibrary = [[ALAssetsLibrary alloc] init];
+  // игнорируется из-за отсутствия ALAssetsLibrary, так как она deprecated и отсутствует в macCatalyst
+  /*ALAssetsLibrary *assetLibrary = [[ALAssetsLibrary alloc] init];
 
   [assetLibrary assetForURL:assetURL resultBlock:^(ALAsset *asset) {
     ALAssetRepresentation *representation = [asset defaultRepresentation];
@@ -693,7 +694,7 @@ typedef void(^ASMultiplexImageLoadCompletionBlock)(UIImage *image, id imageIdent
     completionBlock(downloadedImage, nil);
   } failureBlock:^(NSError *error) {
     completionBlock(nil, error);
-  }];
+  }];*/
 #pragma clang diagnostic pop
 }
 #endif
