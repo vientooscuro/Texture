@@ -194,6 +194,8 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)setHighlightRange:(NSRange)highlightRange animated:(BOOL)animated;
 
+@property (nullable, nonatomic, copy) NSArray<NSNumber *> *pointSizeScaleFactors;
+
 /**
  @abstract Responds to actions from links in the text node.
  @discussion The delegate must be set before the node is loaded, and implement
