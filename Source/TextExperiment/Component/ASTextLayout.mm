@@ -936,7 +936,7 @@ dispatch_semaphore_signal(_lock);
                 }
                 if ([lastLineText as_alignment] == NSTextAlignmentCenter) {
                   adjusted = YES;
-                  adjustedPosition = { (truncatedWidth - truncatedLine.bounds.size.width)/2.0 , adjustedPosition.y };
+                  adjustedPosition = { static_cast<CGFloat>((truncatedWidth - truncatedLine.bounds.size.width)/2.0) , adjustedPosition.y };
                 }
                 if (adjusted) {
                   truncatedLine = [ASTextLine lineWithCTLine:ctTruncatedLine position:adjustedPosition vertical:isVerticalForm];
