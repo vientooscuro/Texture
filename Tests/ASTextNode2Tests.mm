@@ -16,6 +16,10 @@
 
 #import "ASTestCase.h"
 
+@interface ASTextNode2(Beta)
+@property (nullable, nonatomic, copy) NSArray<NSNumber *> *pointSizeScaleFactors;
+@end
+
 @interface ASTextNode2Tests : XCTestCase
 
 @property(nonatomic) ASTextNode2 *textNode;
@@ -128,6 +132,71 @@
   CGSize sizeWithEmptyString = [_textNode layoutThatFits:ASSizeRangeMake(CGSizeZero, constrainedSize)].size;
   XCTAssertTrue(ASIsCGSizeValidForSize(sizeWithEmptyString));
   XCTAssertTrue(sizeWithEmptyString.width == 0);
+}
+
+- (void)testCenterAlignedTruncation
+{
+  ASTextContainer *container = [[ASTextContainer alloc] init];
+  container.maximumNumberOfRows = 3;
+  container.size = CGSizeMake(400, 800);
+  container.truncationType = ASTextTruncationTypeEnd;
+  container.truncationToken = [[NSAttributedString alloc] initWithString:@"\u2026"];
+
+  NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
+  paragraphStyle.lineBreakMode = NSLineBreakByWordWrapping;
+  paragraphStyle.alignment = NSTextAlignmentCenter;
+
+  NSAttributedString *attributedText = self.textNode.attributedText;
+
+  ASTextLayout *layout = [ASTextLayout layoutWithContainer:container text:attributedText];
+  XCTAssertTrue(layout.lines.count == 3);
+
+  CGRect expectedBounds = CGRectMake(3.5060000000000286, 46.061999999999998, 392.98799999999994, 22.32);
+  CGRect bounds = layout.truncatedLine.bounds;
+  
+  XCTAssertTrue(fabs(bounds.origin.x - expectedBounds.origin.x) < FLT_EPSILON);
+  XCTAssertTrue(fabs(bounds.origin.y - expectedBounds.origin.y) < FLT_EPSILON);
+  XCTAssertTrue(fabs(bounds.size.width - expectedBounds.size.width) < FLT_EPSILON);
+  XCTAssertTrue(fabs(bounds.size.height - expectedBounds.size.height) < FLT_EPSILON);  
+}
+
+- (void)testPointSizeScaleFactors
+{
+  ASTextContainer *container = [[ASTextContainer alloc] init];
+  container.maximumNumberOfRows = 1;
+  container.size = CGSizeMake(300, 800);
+  container.truncationType = ASTextTruncationTypeEnd;
+  container.truncationToken = [[NSAttributedString alloc] initWithString:@"\u2026"];
+  container.pointSizeScaleFactors = @[@0.9, @0.75];
+  
+  NSAttributedString *attributedText = [[NSAttributedString alloc] initWithString:@"This is a string that won't fit in the space that I'm giving it. Poor string. Do you think it hurts when a string gets truncated? I hope not." attributes:@{ NSFontAttributeName : [UIFont systemFontOfSize:16] }];;
+  
+  ASTextLayout *layout = [ASTextLayout layoutWithContainer:container text:attributedText];
+  [layout.text enumerateAttribute:NSFontAttributeName inRange:NSMakeRange(0, layout.text.length) options:0 usingBlock:^(id  _Nullable value, NSRange range, BOOL * _Nonnull stop) {
+    // there should only be one font size for the entire string
+    XCTAssertTrue(range.length == layout.text.length);
+    XCTAssertTrue([(UIFont *)value pointSize] == 12.0);
+    XCTAssertTrue(CGSizeEqualToSize(layout.textBoundingSize, CGSizeMake(299, 14)));
+  }];
+}
+
+- (void)testNonTruncatedCenteredText
+{
+  CGSize constrainedSize = CGSizeMake(100, 50);
+  
+  NSMutableParagraphStyle *paragraph = [[NSMutableParagraphStyle alloc] init];
+  paragraph.alignment = NSTextAlignmentCenter;
+  
+  // test that the centered text uses the entire container width
+  ASTextNode2 *textNode = [[ASTextNode2 alloc] init];
+  textNode.attributedText = [[NSAttributedString alloc] initWithString:@"hi" attributes:@{ NSParagraphStyleAttributeName : paragraph }];
+  CGSize size = [textNode layoutThatFits:ASSizeRangeMake(CGSizeZero, constrainedSize)].size;
+  XCTAssertTrue(size.width == 100);
+
+  // non centered text should not use the entire container width
+  textNode.attributedText = [[NSAttributedString alloc] initWithString:@"hi"];
+  size = [textNode layoutThatFits:ASSizeRangeMake(CGSizeZero, constrainedSize)].size;
+  XCTAssertTrue(size.width < 20);
 }
 
 @end

@@ -65,6 +65,11 @@ ASDK_EXTERN const CGSize ASTextContainerMaxSize;
 /// The constrained size. (if the size is larger than ASTextContainerMaxSize, it will be clipped)
 @property CGSize size;
 
+/// An array of descending scale factors that will be applied to this container's text to try to make it fit within its constrained size
+/// This array should be in descending order and NOT contain the scale factor 1.0. For example, it could be @[@(.9), @(.85), @(.8)];
+/// defaults to nil (no scaling)
+@property NSArray<NSNumber *> *pointSizeScaleFactors;
+
 /// The insets for constrained size. The inset value should not be negative. Default is UIEdgeInsetsZero.
 @property UIEdgeInsets insets;
 
@@ -493,6 +498,16 @@ ASDK_EXTERN const CGSize ASTextContainerMaxSize;
  the selection. If not found, the array is empty.
  */
 - (NSArray<ASTextSelectionRect *> *)selectionRectsWithOnlyStartAndEndForRange:(ASTextRange *)range;
+
+/**
+ Returns the textBoundingSize. If the layout has a truncatedLine, the truncatedLine's width is
+ used as the width (clamped to constrainedWidth) if it is larger than textBoundingSize.width.
+ If the layout has no truncatedLine, textBoundingSize is returned
+ 
+ @param constrainedWidth The constrained width of the layout. The min between this and the truncated line's with is used for the returned width
+ @return The textBoundingSize taking the truncated line into consideration
+ */
+- (CGSize)textBoundingSizeUsingTruncatedLineConstrainedToWidth:(CGFloat)constrainedWidth;
 
 
 #pragma mark - Draw text layout
