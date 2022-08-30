@@ -83,10 +83,14 @@ void ASInitializeFrameworkMainThread(void)
 
 BOOL ASSubclassOverridesSelector(Class superclass, Class subclass, SEL selector)
 {
-  if (superclass == subclass) return NO; // Even if the class implements the selector, it doesn't override itself.
-  Method superclassMethod = class_getInstanceMethod(superclass, selector);
-  Method subclassMethod = class_getInstanceMethod(subclass, selector);
-  return (superclassMethod != subclassMethod);
+  @try {
+    if (superclass == subclass) return NO; // Even if the class implements the selector, it doesn't override itself.
+    Method superclassMethod = class_getInstanceMethod(superclass, selector);
+    Method subclassMethod = class_getInstanceMethod(subclass, selector);
+    return (superclassMethod != subclassMethod);
+  } @catch (NSException *exception) {
+    return NO;
+  }
 }
 
 BOOL ASSubclassOverridesClassSelector(Class superclass, Class subclass, SEL selector)
