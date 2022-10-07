@@ -55,6 +55,8 @@ static NSString * const kCellReuseIdentifier = @"_ASTableViewCell";
     superResponds; \
   })
 
+#define ASCellLayoutModeIncludes(layoutMode) ((self->_cellLayoutMode & layoutMode) == layoutMode)
+
 @interface UITableView (ScrollViewDelegate)
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView;
@@ -1706,9 +1708,19 @@ static NSString * const kCellReuseIdentifier = @"_ASTableViewCell";
 - (BOOL)dataController:(ASDataController *)dataController shouldSynchronouslyProcessChangeSet:(_ASHierarchyChangeSet *)changeSet
 {
   // Reload data is expensive, don't block main while doing so.
+  if (ASCellLayoutModeIncludes(ASCellLayoutModeAlwaysSync)) {
+    return YES;
+  }
+  
+  // Prioritize AlwaysAsync over the remaining heuristics for the Default mode.
+  if (ASCellLayoutModeIncludes(ASCellLayoutModeAlwaysAsync)) {
+    return NO;
+  }
+  
   if (changeSet.includesReloadData) {
     return NO;
   }
+  
   // For more details on this method, see the comment in the ASCollectionView implementation.
   if (changeSet.countForAsyncLayout < 2) {
     return YES;

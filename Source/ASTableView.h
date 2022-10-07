@@ -9,6 +9,7 @@
 
 #import <UIKit/UIKit.h>
 
+#import <AsyncDisplayKit/ASCollectionViewProtocols.h>
 #import <AsyncDisplayKit/ASBaseDefines.h>
 #import <AsyncDisplayKit/ASLayoutRangeType.h>
 #import <AsyncDisplayKit/ASTableViewProtocols.h>
@@ -29,6 +30,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// The corresponding table node, or nil if one does not exist.
 @property (nonatomic, weak, readonly) ASTableNode *tableNode;
+
+@property (nonatomic) ASCellLayoutMode cellLayoutMode;
 
 /**
  * Retrieves the node for the row at the given index path.

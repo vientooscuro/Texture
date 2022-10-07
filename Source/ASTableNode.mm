@@ -27,6 +27,7 @@
 @interface _ASTablePendingState : NSObject {
 @public
   std::vector<std::vector<ASRangeTuningParameters>> _tuningParameters;
+  ASCellLayoutMode _cellLayoutMode;
 }
 @property (nonatomic, weak) id <ASTableDelegate>   delegate;
 @property (nonatomic, weak) id <ASTableDataSource> dataSource;
@@ -36,6 +37,7 @@
 @property (nonatomic) BOOL allowsMultipleSelection;
 @property (nonatomic) BOOL allowsMultipleSelectionDuringEditing;
 @property (nonatomic) BOOL inverted;
+@property (nonatomic) ASCellLayoutMode cellLayoutMode;
 @property (nonatomic) CGFloat leadingScreensForBatching;
 @property (nonatomic) UIEdgeInsets contentInset;
 @property (nonatomic) CGPoint contentOffset;
@@ -52,6 +54,7 @@
 {
   self = [super init];
   if (self) {
+    _cellLayoutMode = ASCellLayoutModeAlwaysAsync;
     _rangeMode = ASLayoutRangeModeUnspecified;
     _tuningParameters = [ASAbstractLayoutController defaultTuningParameters];
     _allowsSelection = YES;
@@ -70,6 +73,16 @@
 }
 
 #pragma mark Tuning Parameters
+
+- (ASCellLayoutMode)cellLayoutMode
+{
+  return _cellLayoutMode;
+}
+
+- (void)setCellLayoutMode:(ASCellLayoutMode)cellLayoutMode
+{
+  _cellLayoutMode = cellLayoutMode;
+}
 
 - (ASRangeTuningParameters)tuningParametersForRangeType:(ASLayoutRangeType)rangeType
 {
@@ -158,6 +171,7 @@
     view.asyncDelegate                        = pendingState.delegate;
     view.asyncDataSource                      = pendingState.dataSource;
     view.inverted                             = pendingState.inverted;
+    view.cellLayoutMode                       = pendingState.cellLayoutMode;
     view.allowsSelection                      = pendingState.allowsSelection;
     view.allowsSelectionDuringEditing         = pendingState.allowsSelectionDuringEditing;
     view.allowsMultipleSelection              = pendingState.allowsMultipleSelection;
@@ -531,6 +545,24 @@
 - (id<ASBatchFetchingDelegate>)batchFetchingDelegate
 {
   return _batchFetchingDelegate;
+}
+
+- (ASCellLayoutMode)cellLayoutMode
+{
+  if ([self pendingState]) {
+    return _pendingState.cellLayoutMode;
+  } else {
+    return self.view.cellLayoutMode;
+  }
+}
+
+- (void)setCellLayoutMode:(ASCellLayoutMode)cellLayoutMode
+{
+  if ([self pendingState]) {
+    _pendingState.cellLayoutMode = cellLayoutMode;
+  } else {
+    self.view.cellLayoutMode = cellLayoutMode;
+  }
 }
 
 #pragma mark ASRangeControllerUpdateRangeProtocol

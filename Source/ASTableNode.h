@@ -34,6 +34,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, weak) id <ASTableDelegate>   delegate;
 @property (nonatomic, weak) id <ASTableDataSource> dataSource;
 
+@property (nonatomic) ASCellLayoutMode cellLayoutMode;
+
 /**
  * The number of screens left to scroll before the delegate -tableNode:beginBatchFetchingWithContext: is called.
  *
