@@ -317,6 +317,7 @@ static NSString * const kCellReuseIdentifier = @"_ASTableViewCell";
   if (!(self = [super initWithFrame:frame style:style])) {
     return nil;
   }
+  _cellLayoutMode = ASCellLayoutModeAlwaysAsync;
   _cellsForVisibilityUpdates = [NSHashTable hashTableWithOptions:NSHashTableObjectPointerPersonality];
   _cellsForLayoutUpdates = [NSHashTable hashTableWithOptions:NSHashTableObjectPointerPersonality];
   if (!dataControllerClass) {
