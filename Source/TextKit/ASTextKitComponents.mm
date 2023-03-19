@@ -195,6 +195,7 @@
       [lineSizes addObject:[NSValue valueWithCGSize:rect.size]];
       if (numberOfLines == maxNumberOfLines) {
         height = rect.origin.y + rect.size.height;
+      } else if (numberOfLines == maxNumberOfLines) {
         break;
       }
     }
