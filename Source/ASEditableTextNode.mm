@@ -107,6 +107,7 @@
 #pragma mark -
 @interface ASEditableTextNode () <UITextViewDelegate, NSLayoutManagerDelegate>
 {
+  
   @private
   // Configuration.
   NSDictionary *_typingAttributes;
@@ -134,6 +135,8 @@
 
   NSRange _previousSelectedRange;
 }
+
+@property (nonatomic, readwrite) NSArray<NSValue*>* linesInfo;
 
 @property (nonatomic, readonly) _ASTextInputTraitsPendingState *textInputTraits;
 
@@ -237,10 +240,14 @@
   CGSize textSize;
   
   if (_maximumLinesToDisplay > 0) {
+    NSMutableArray<NSValue*> *linesInfo = [NSMutableArray new];
     textSize = [displayedComponents sizeForConstrainedWidth:constrainedSize.width
-                                        forMaxNumberOfLines: _maximumLinesToDisplay];
+                                        forMaxNumberOfLines: _maximumLinesToDisplay
+                                                  linesInfo:&linesInfo];
+    self.linesInfo = linesInfo;
   } else {
     textSize = [displayedComponents sizeForConstrainedWidth:constrainedSize.width];
+    self.linesInfo = nil;
   }
   
   CGFloat width = std::ceil(textSize.width + _textContainerInset.left + _textContainerInset.right);

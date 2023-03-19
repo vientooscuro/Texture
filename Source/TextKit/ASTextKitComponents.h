@@ -52,6 +52,10 @@ AS_SUBCLASSING_RESTRICTED
 - (CGSize)sizeForConstrainedWidth:(CGFloat)constrainedWidth;
 
 - (CGSize)sizeForConstrainedWidth:(CGFloat)constrainedWidth
+              forMaxNumberOfLines:(NSInteger)numberOfLines
+                        linesInfo:(NSMutableArray<NSValue*>*_Nullable*_Nullable)linesInfo;
+
+- (CGSize)sizeForConstrainedWidth:(CGFloat)constrainedWidth
               forMaxNumberOfLines:(NSInteger)numberOfLines;
 
 @property (nonatomic, readonly) NSTextStorage *textStorage;

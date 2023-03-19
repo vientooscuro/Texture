@@ -140,9 +140,16 @@
 }
 
 - (CGSize)sizeForConstrainedWidth:(CGFloat)constrainedWidth
+              forMaxNumberOfLines:(NSInteger)maxNumberOfLines {
+  return [self sizeForConstrainedWidth:constrainedWidth forMaxNumberOfLines:maxNumberOfLines linesInfo:nil];
+}
+
+- (CGSize)sizeForConstrainedWidth:(CGFloat)constrainedWidth
               forMaxNumberOfLines:(NSInteger)maxNumberOfLines
+                        linesInfo:(NSMutableArray<NSValue*>*_Nullable*_Nullable)linesInfo
 {
   if (maxNumberOfLines == 0) {
+    linesInfo = nil;
     return [self sizeForConstrainedWidth:constrainedWidth];
   }
   
@@ -166,12 +173,26 @@
   
   glyphRange = [components.layoutManager glyphRangeForTextContainer:components.textContainer];
   
+  if (*linesInfo == nil) {
+      // если *linesInfo == nil, создаем новый объект NSMutableArray<NSValue*>*
+      *linesInfo = [NSMutableArray array];
+  }
+  
+  auto lineSizes = *linesInfo;
+  
+  // теперь *linesInfo ссылается на созданный объект NSMutableArray<NSValue*>*,
+  // поэтому мы можем добавить новые значения в массив
+  NSValue *newValue = [NSValue valueWithCGSize:CGSizeMake(100, 200)];
+  [*linesInfo addObject:newValue];
+
+  
   while (lineRange.location < NSMaxRange(glyphRange)) {
     rect = [components.layoutManager lineFragmentRectForGlyphAtIndex:lineRange.location
                                                       effectiveRange:&lineRange];
     
     if (CGRectGetMinY(rect) > lastOriginY) {
       ++numberOfLines;
+      [lineSizes addObject:[NSValue valueWithCGSize:rect.size]];
       if (numberOfLines == maxNumberOfLines) {
         height = rect.origin.y + rect.size.height;
         break;

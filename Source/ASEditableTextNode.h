@@ -10,6 +10,7 @@
 #import <AsyncDisplayKit/ASDisplayNode.h>
 #import <UIKit/UIKit.h>
 
+
 NS_ASSUME_NONNULL_BEGIN
 
 @protocol ASEditableTextNodeDelegate;
@@ -55,6 +56,8 @@ NS_ASSUME_NONNULL_BEGIN
   @warning This property should only be used on the main thread and should not be accessed before the editable text node's view is created.
  */
 @property (nonatomic, readonly) UITextView *textView;
+
+@property (nonatomic, readonly) NSArray<NSValue*> *linesInfo;
 
 //! @abstract The attributes to apply to new text being entered by the user.
 @property (nullable, nonatomic, copy) NSDictionary<NSString *, id> *typingAttributes;
