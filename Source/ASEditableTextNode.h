@@ -57,7 +57,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic, readonly) UITextView *textView;
 
-@property (nonatomic, readonly) NSArray<NSValue*> *linesInfo;
+@property (nonatomic, readonly, nullable) NSArray<NSValue*> *linesInfo;
 
 //! @abstract The attributes to apply to new text being entered by the user.
 @property (nullable, nonatomic, copy) NSDictionary<NSString *, id> *typingAttributes;

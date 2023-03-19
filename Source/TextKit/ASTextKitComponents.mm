@@ -179,23 +179,26 @@
   }
   
   auto lineRects = *linesInfo;
-  
-  // теперь *linesInfo ссылается на созданный объект NSMutableArray<NSValue*>*,
-  // поэтому мы можем добавить новые значения в массив
-  NSValue *newValue = [NSValue valueWithCGSize:CGSizeMake(100, 200)];
-  [*linesInfo addObject:newValue];
-
-  
+  auto string = components.textStorage.string;
   while (lineRange.location < NSMaxRange(glyphRange)) {
+    auto currentRect = rect;
     rect = [components.layoutManager lineFragmentRectForGlyphAtIndex:lineRange.location
                                                       effectiveRange:&lineRange];
+    auto i = lineRange.location + lineRange.length - 1;
+    while ([string characterAtIndex:i] == (unichar)'\n' && i > lineRange.location) {
+      --i;
+    }
     
+    auto lineRect = [components.layoutManager boundingRectForGlyphRange:NSMakeRange(lineRange.location, i - lineRange.location + 1) inTextContainer:components.textContainer];
+    if (lineRange.location == i)
+      lineRect.size.width = 0;
     if (CGRectGetMinY(rect) > lastOriginY) {
       ++numberOfLines;
-      [lineRects addObject:[NSValue valueWithCGRect:rect]];
+      [lineRects addObject:[NSValue valueWithCGRect:lineRect]];
       if (numberOfLines == maxNumberOfLines) {
         height = rect.origin.y + rect.size.height;
-      } else if (numberOfLines == maxNumberOfLines) {
+      } else if (numberOfLines == maxNumberOfLines + 1) {
+        rect = currentRect;
         break;
       }
     }

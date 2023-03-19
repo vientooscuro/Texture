@@ -136,7 +136,7 @@
   NSRange _previousSelectedRange;
 }
 
-@property (nonatomic, readwrite) NSArray<NSValue*>* linesInfo;
+@property (nonatomic, readwrite, nullable) NSArray<NSValue*>* linesInfo;
 
 @property (nonatomic, readonly) _ASTextInputTraitsPendingState *textInputTraits;
 
