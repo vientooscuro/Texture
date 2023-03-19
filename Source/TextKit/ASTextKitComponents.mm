@@ -178,7 +178,7 @@
       *linesInfo = [NSMutableArray array];
   }
   
-  auto lineSizes = *linesInfo;
+  auto lineRects = *linesInfo;
   
   // теперь *linesInfo ссылается на созданный объект NSMutableArray<NSValue*>*,
   // поэтому мы можем добавить новые значения в массив
@@ -192,7 +192,7 @@
     
     if (CGRectGetMinY(rect) > lastOriginY) {
       ++numberOfLines;
-      [lineSizes addObject:[NSValue valueWithCGSize:rect.size]];
+      [lineRects addObject:[NSValue valueWithCGRect:rect]];
       if (numberOfLines == maxNumberOfLines) {
         height = rect.origin.y + rect.size.height;
       } else if (numberOfLines == maxNumberOfLines) {
