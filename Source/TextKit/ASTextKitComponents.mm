@@ -180,12 +180,13 @@
   
   auto lineRects = *linesInfo;
   auto string = components.textStorage.string;
+  auto length = string.length;
   while (lineRange.location < NSMaxRange(glyphRange)) {
     auto currentRect = rect;
     rect = [components.layoutManager lineFragmentRectForGlyphAtIndex:lineRange.location
                                                       effectiveRange:&lineRange];
-    auto i = lineRange.location + lineRange.length - 1;
-    while ([string characterAtIndex:i] == (unichar)'\n' && i > lineRange.location) {
+    auto i = fmin(lineRange.location + lineRange.length - 1, length - 1);
+    while (i > lineRange.location && [string characterAtIndex:i] == (unichar)'\n') {
       --i;
     }
     
