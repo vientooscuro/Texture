@@ -124,14 +124,17 @@
 
 - (CGSize)sizeForConstrainedWidth:(CGFloat)constrainedWidth
 {
+  
   ASTextKitComponents *components = self;
-
+  /*
   // If our text-view's width is already the constrained width, we can use our existing TextKit stack for this sizing calculation.
   // Otherwise, we create a temporary stack to size for `constrainedWidth`.
   if (CGRectGetWidth(components.textView.threadSafeBounds) != constrainedWidth) {
     components = [ASTextKitComponents componentsWithAttributedSeedString:components.textStorage textContainerSize:CGSizeMake(constrainedWidth, CGFLOAT_MAX)];
   }
-
+*/
+  // should be fixed, but sometimes if components.textView.threadSafeBounds is correct, components.layoutManager is different from newComponents.layoutManager
+  components = [ASTextKitComponents componentsWithAttributedSeedString:components.textStorage textContainerSize:CGSizeMake(constrainedWidth, CGFLOAT_MAX)];
   // Force glyph generation and layout, which may not have happened yet (and isn't triggered by -usedRectForTextContainer:).
   [components.layoutManager ensureLayoutForTextContainer:components.textContainer];
   CGSize textSize = [components.layoutManager usedRectForTextContainer:components.textContainer].size;
