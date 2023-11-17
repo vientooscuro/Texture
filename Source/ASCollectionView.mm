@@ -1655,7 +1655,10 @@ static NSString * const kReuseIdentifier = @"_ASCollectionReuseIdentifier";
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
 {
   _deceleratingVelocity = CGPointZero;
-    
+  for (_ASCollectionViewCell *cell in _cellsForVisibilityUpdates) {
+    [cell cellNodeVisibilityEvent:ASCellNodeVisibilityEventDidStopScrolling inScrollView:scrollView];
+  }
+
   if (_asyncDelegateFlags.scrollViewDidEndDecelerating) {
     [_asyncDelegate scrollViewDidEndDecelerating:scrollView];
   }
@@ -1859,8 +1862,11 @@ static NSString * const kReuseIdentifier = @"_ASCollectionReuseIdentifier";
 {
   // Since we are accessing self.collectionViewLayout, we should make sure we are on main
   ASDisplayNodeAssertMainThread();
-  
-  if (ASDisplayShouldFetchBatchForScrollView(self, self.scrollDirection, self.scrollableDirections, contentOffset, velocity, self.collectionViewLayout.flipsHorizontallyInOppositeLayoutDirection)) {
+  BOOL flipsHorizontallyInOppositeLayoutDirection = NO;
+  if (AS_AVAILABLE_IOS(11.0)) {
+    flipsHorizontallyInOppositeLayoutDirection = self.collectionViewLayout.flipsHorizontallyInOppositeLayoutDirection;
+  }
+  if (ASDisplayShouldFetchBatchForScrollView(self, self.scrollDirection, self.scrollableDirections, contentOffset, velocity, flipsHorizontallyInOppositeLayoutDirection)) {
     [self _beginBatchFetching];
   }
 }
