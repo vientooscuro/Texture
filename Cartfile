@@ -1,2 +1,3 @@
-github "vientooscuro/PINRemoteImage" "master"
+github "pinterest/PINRemoteImage" "3.0.4"
+github "pinterest/PINCache" "3.0.4"
 
