@@ -55,7 +55,7 @@ NS_ASSUME_NONNULL_BEGIN
   @abstract Access to underlying UITextView for more configuration options.
   @warning This property should only be used on the main thread and should not be accessed before the editable text node's view is created.
  */
-@property (nonatomic, readonly) UITextView *textView;
+@property (nonatomic, readonly) UITextView *textView NS_SWIFT_UI_ACTOR;
 
 @property (nonatomic, readonly, nullable) NSArray<NSValue*> *linesInfo;
 

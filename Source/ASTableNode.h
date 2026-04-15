@@ -163,7 +163,7 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * This method must be called on the main thread.
  */
-- (void)scrollToRowAtIndexPath:(NSIndexPath *)indexPath atScrollPosition:(UITableViewScrollPosition)scrollPosition animated:(BOOL)animated;
+- (void)scrollToRowAtIndexPath:(NSIndexPath *)indexPath atScrollPosition:(UITableViewScrollPosition)scrollPosition animated:(BOOL)animated NS_SWIFT_UI_ACTOR;
 
 /**
  * Reload everything from scratch, destroying the working range and all cached nodes.
@@ -172,7 +172,7 @@ NS_ASSUME_NONNULL_BEGIN
  * the main thread.
  * @warning This method is substantially more expensive than UITableView's version.
  */
-- (void)reloadDataWithCompletion:(nullable void (^)(void))completion;
+- (void)reloadDataWithCompletion:(nullable NS_SWIFT_UI_ACTOR void (^)(void))completion;
 
 /**
  * Reload everything from scratch, destroying the working range and all cached nodes.
@@ -198,7 +198,7 @@ NS_ASSUME_NONNULL_BEGIN
  *                    Boolean parameter that contains the value YES if all of the related animations completed successfully or
  *                    NO if they were interrupted. This parameter may be nil. If supplied, the block is run on the main thread.
  */
-- (void)performBatchAnimated:(BOOL)animated updates:(nullable AS_NOESCAPE void (^)(void))updates completion:(nullable void (^)(BOOL finished))completion;
+- (void)performBatchAnimated:(BOOL)animated updates:(nullable AS_NOESCAPE void (^)(void))updates completion:(nullable NS_SWIFT_UI_ACTOR void (^)(BOOL finished))completion NS_SWIFT_UI_ACTOR;
 
 /**
  *  Perform a batch of updates asynchronously with animations in the batch. This method must be called from the main thread.
@@ -209,7 +209,7 @@ NS_ASSUME_NONNULL_BEGIN
  *                    Boolean parameter that contains the value YES if all of the related animations completed successfully or
  *                    NO if they were interrupted. This parameter may be nil. If supplied, the block is run on the main thread.
  */
-- (void)performBatchUpdates:(nullable AS_NOESCAPE void (^)(void))updates completion:(nullable void (^)(BOOL finished))completion;
+- (void)performBatchUpdates:(nullable AS_NOESCAPE void (^)(void))updates completion:(nullable NS_SWIFT_UI_ACTOR void (^)(BOOL finished))completion NS_SWIFT_UI_ACTOR;
 
 /**
  *  Returns YES if the ASCollectionNode is still processing changes from performBatchUpdates:.
@@ -238,12 +238,12 @@ NS_ASSUME_NONNULL_BEGIN
  *
  *  Calling -waitUntilAllUpdatesAreProcessed is one way to flush any pending update completion blocks.
  */
-- (void)onDidFinishProcessingUpdates:(void (^)(void))didFinishProcessingUpdates;
+- (void)onDidFinishProcessingUpdates:(NS_SWIFT_UI_ACTOR void (^)(void))didFinishProcessingUpdates;
 
 /**
  *  Blocks execution of the main thread until all section and item updates are committed to the view. This method must be called from the main thread.
  */
-- (void)waitUntilAllUpdatesAreProcessed;
+- (void)waitUntilAllUpdatesAreProcessed NS_SWIFT_UI_ACTOR;
 
 /**
  * Inserts one or more sections, with an option to animate the insertion.
@@ -255,7 +255,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion This method must be called from the main thread. The asyncDataSource must be updated to reflect the changes
  * before this method is called.
  */
-- (void)insertSections:(NSIndexSet *)sections withRowAnimation:(UITableViewRowAnimation)animation;
+- (void)insertSections:(NSIndexSet *)sections withRowAnimation:(UITableViewRowAnimation)animation NS_SWIFT_UI_ACTOR;
 
 /**
  * Deletes one or more sections, with an option to animate the deletion.
@@ -267,7 +267,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion This method must be called from the main thread. The asyncDataSource must be updated to reflect the changes
  * before this method is called.
  */
-- (void)deleteSections:(NSIndexSet *)sections withRowAnimation:(UITableViewRowAnimation)animation;
+- (void)deleteSections:(NSIndexSet *)sections withRowAnimation:(UITableViewRowAnimation)animation NS_SWIFT_UI_ACTOR;
 
 /**
  * Reloads the specified sections using a given animation effect.
@@ -279,7 +279,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion This method must be called from the main thread. The asyncDataSource must be updated to reflect the changes
  * before this method is called.
  */
-- (void)reloadSections:(NSIndexSet *)sections withRowAnimation:(UITableViewRowAnimation)animation;
+- (void)reloadSections:(NSIndexSet *)sections withRowAnimation:(UITableViewRowAnimation)animation NS_SWIFT_UI_ACTOR;
 
 /**
  * Moves a section to a new location.
@@ -291,7 +291,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion This method must be called from the main thread. The asyncDataSource must be updated to reflect the changes
  * before this method is called.
  */
-- (void)moveSection:(NSInteger)section toSection:(NSInteger)newSection;
+- (void)moveSection:(NSInteger)section toSection:(NSInteger)newSection NS_SWIFT_UI_ACTOR;
 
 /**
  * Inserts rows at the locations identified by an array of index paths, with an option to animate the insertion.
@@ -303,7 +303,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion This method must be called from the main thread. The asyncDataSource must be updated to reflect the changes
  * before this method is called.
  */
-- (void)insertRowsAtIndexPaths:(NSArray<NSIndexPath *> *)indexPaths withRowAnimation:(UITableViewRowAnimation)animation;
+- (void)insertRowsAtIndexPaths:(NSArray<NSIndexPath *> *)indexPaths withRowAnimation:(UITableViewRowAnimation)animation NS_SWIFT_UI_ACTOR;
 
 /**
  * Deletes the rows specified by an array of index paths, with an option to animate the deletion.
@@ -315,7 +315,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion This method must be called from the main thread. The asyncDataSource must be updated to reflect the changes
  * before this method is called.
  */
-- (void)deleteRowsAtIndexPaths:(NSArray<NSIndexPath *> *)indexPaths withRowAnimation:(UITableViewRowAnimation)animation;
+- (void)deleteRowsAtIndexPaths:(NSArray<NSIndexPath *> *)indexPaths withRowAnimation:(UITableViewRowAnimation)animation NS_SWIFT_UI_ACTOR;
 
 /**
  * Reloads the specified rows using a given animation effect.
@@ -327,7 +327,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion This method must be called from the main thread. The asyncDataSource must be updated to reflect the changes
  * before this method is called.
  */
-- (void)reloadRowsAtIndexPaths:(NSArray<NSIndexPath *> *)indexPaths withRowAnimation:(UITableViewRowAnimation)animation;
+- (void)reloadRowsAtIndexPaths:(NSArray<NSIndexPath *> *)indexPaths withRowAnimation:(UITableViewRowAnimation)animation NS_SWIFT_UI_ACTOR;
 
 /**
  * Moves the row at a specified location to a destination location.
@@ -339,7 +339,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion This method must be called from the main thread. The asyncDataSource must be updated to reflect the changes
  * before this method is called.
  */
-- (void)moveRowAtIndexPath:(NSIndexPath *)indexPath toIndexPath:(NSIndexPath *)newIndexPath;
+- (void)moveRowAtIndexPath:(NSIndexPath *)indexPath toIndexPath:(NSIndexPath *)newIndexPath NS_SWIFT_UI_ACTOR;
 
 #pragma mark - Selection
 
@@ -355,7 +355,7 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * @discussion This method must be called from the main thread.
  */
-- (void)selectRowAtIndexPath:(nullable NSIndexPath *)indexPath animated:(BOOL)animated scrollPosition:(UITableViewScrollPosition)scrollPosition;
+- (void)selectRowAtIndexPath:(nullable NSIndexPath *)indexPath animated:(BOOL)animated scrollPosition:(UITableViewScrollPosition)scrollPosition  NS_SWIFT_UI_ACTOR;
 
 /*
  * Deselects a given row identified by index path, with an option to animate the deselection.
@@ -368,7 +368,7 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * @discussion This method must be called from the main thread.
  */
-- (void)deselectRowAtIndexPath:(NSIndexPath *)indexPath animated:(BOOL)animated;
+- (void)deselectRowAtIndexPath:(NSIndexPath *)indexPath animated:(BOOL)animated NS_SWIFT_UI_ACTOR;
 
 #pragma mark - Querying Data
 
@@ -391,7 +391,7 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * @return an array containing the nodes being displayed on screen. This must be called on the main thread.
  */
-@property (nonatomic, readonly) NSArray<__kindof ASCellNode *> *visibleNodes;
+@property (nonatomic, readonly) NSArray<__kindof ASCellNode *> *visibleNodes NS_SWIFT_UI_ACTOR;
 
 /**
  * Retrieves the node for the row at the given index path.
@@ -421,7 +421,7 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * @discussion This method must be called from the main thread.
  */
-- (CGRect)rectForRowAtIndexPath:(NSIndexPath *)indexPath AS_WARN_UNUSED_RESULT;
+- (CGRect)rectForRowAtIndexPath:(NSIndexPath *)indexPath AS_WARN_UNUSED_RESULT NS_SWIFT_UI_ACTOR;
 
 /**
  * Similar to -[UITableView cellForRowAtIndexPath:]
@@ -432,7 +432,7 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * @discussion This method must be called from the main thread.
  */
-- (nullable __kindof UITableViewCell *)cellForRowAtIndexPath:(NSIndexPath *)indexPath AS_WARN_UNUSED_RESULT;
+- (nullable __kindof UITableViewCell *)cellForRowAtIndexPath:(NSIndexPath *)indexPath AS_WARN_UNUSED_RESULT NS_SWIFT_UI_ACTOR;
 
 /**
  * Similar to UITableView.indexPathForSelectedRow
@@ -444,9 +444,9 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * @discussion This method must be called from the main thread.
  */
-@property (nullable, nonatomic, copy, readonly) NSIndexPath *indexPathForSelectedRow;
+@property (nullable, nonatomic, copy, readonly) NSIndexPath *indexPathForSelectedRow NS_SWIFT_UI_ACTOR;
 
-@property (nonatomic, readonly, nullable) NSArray<NSIndexPath *> *indexPathsForSelectedRows;
+@property (nonatomic, readonly, nullable) NSArray<NSIndexPath *> *indexPathsForSelectedRows NS_SWIFT_UI_ACTOR;
 
 /**
  * Similar to -[UITableView indexPathForRowAtPoint:]
@@ -458,7 +458,7 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * @discussion This method must be called from the main thread.
  */
-- (nullable NSIndexPath *)indexPathForRowAtPoint:(CGPoint)point AS_WARN_UNUSED_RESULT;
+- (nullable NSIndexPath *)indexPathForRowAtPoint:(CGPoint)point AS_WARN_UNUSED_RESULT NS_SWIFT_UI_ACTOR;
 
 /**
  * Similar to -[UITableView indexPathsForRowsInRect:]
@@ -470,7 +470,7 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * @discussion This method must be called from the main thread.
  */
-- (nullable NSArray<NSIndexPath *> *)indexPathsForRowsInRect:(CGRect)rect AS_WARN_UNUSED_RESULT;
+- (nullable NSArray<NSIndexPath *> *)indexPathsForRowsInRect:(CGRect)rect AS_WARN_UNUSED_RESULT NS_SWIFT_UI_ACTOR;
 
 /**
  * Similar to -[UITableView indexPathsForVisibleRows]
@@ -480,7 +480,7 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * @discussion This method must be called from the main thread.
  */
-- (NSArray<NSIndexPath *> *)indexPathsForVisibleRows AS_WARN_UNUSED_RESULT;
+- (NSArray<NSIndexPath *> *)indexPathsForVisibleRows AS_WARN_UNUSED_RESULT NS_SWIFT_UI_ACTOR;
 
 @end
 
@@ -530,7 +530,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @return a node to display for this row. This will be called on the main thread and should not implement reuse (it will be called once per row). Unlike UITableView's version, this method
  * is not called when the row is about to display.
  */
-- (ASCellNode *)tableNode:(ASTableNode *)tableNode nodeForRowAtIndexPath:(NSIndexPath *)indexPath;
+- (ASCellNode *)tableNode:(ASTableNode *)tableNode nodeForRowAtIndexPath:(NSIndexPath *)indexPath NS_SWIFT_UI_ACTOR;
 
 /**
  * Similar to -tableView:cellForRowAtIndexPath:.
