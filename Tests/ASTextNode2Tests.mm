@@ -76,6 +76,11 @@
   XCTAssertTrue(_textNode.isTruncated, @"Text Node should be truncated");
 }
 
+- (void)testTextBoundingSizeUsingTruncatedLineIsImplemented
+{
+  XCTAssertTrue([ASTextLayout instancesRespondToSelector:@selector(textBoundingSizeUsingTruncatedLineConstrainedToWidth:)]);
+}
+
 - (void)testAccessibility
 {
   XCTAssertTrue(_textNode.isAccessibilityElement, @"Should be an accessibility element");

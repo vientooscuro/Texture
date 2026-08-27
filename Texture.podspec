@@ -11,7 +11,7 @@ Pod::Spec.new do |spec|
 
   spec.documentation_url = 'http://texturegroup.org/appledoc/'
 
-  ios_deployment_target = '14.0'
+  ios_deployment_target = '15.0'
   tvos_deployment_target = '14.0'
   spec.ios.deployment_target = ios_deployment_target
   spec.tvos.deployment_target = tvos_deployment_target

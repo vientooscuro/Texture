@@ -2260,6 +2260,13 @@ dispatch_semaphore_signal(_lock);
   return rects;
 }
 
+- (CGSize)textBoundingSizeUsingTruncatedLineConstrainedToWidth:(CGFloat)width {
+  if (self.truncatedLine != nil && self.truncatedLine.size.width > self.textBoundingSize.width) {
+    return (CGSize) {ceil(MIN(width, self.truncatedLine.size.width)), ceil(self.textBoundingSize.height)};
+  }
+  return self.textBoundingSize;
+}
+
 
 #pragma mark - Draw
 
