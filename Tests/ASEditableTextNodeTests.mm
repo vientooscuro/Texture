@@ -55,6 +55,35 @@ static BOOL CGSizeEqualToSizeWithIn(CGSize size1, CGSize size2, CGFloat delta)
   XCTAssertTrue([[node class] isSubclassOfClass:[ASEditableTextNode class]], @"ASEditableTextNode alloc should return an instance of ASEditableTextNode, instead returned %@", [node class]);
 }
 
+- (void)testColdInitialTextAndInsetsMatchLegacyBeforeAndAfterLoading
+{
+  NSAttributedString *text = [[NSAttributedString alloc] initWithString:@"12.04.2025"
+                                                             attributes:@{NSFontAttributeName: [UIFont systemFontOfSize:17]}];
+  UIEdgeInsets insets = UIEdgeInsetsMake(7, 7, 7, 7);
+  ASEditableTextNode *legacy = [[ASEditableTextNode alloc] init];
+  legacy.textContainerInset = insets;
+  legacy.attributedText = text;
+
+  __block ASEditableTextNode *cold = nil;
+  dispatch_semaphore_t finished = dispatch_semaphore_create(0);
+  dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+    cold = [ASEditableTextNode coldNodeWithInitialAttributedText:text textContainerInset:insets];
+    dispatch_semaphore_signal(finished);
+  });
+  long waitResult = dispatch_semaphore_wait(finished, dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC));
+  XCTAssertEqual(waitResult, 0);
+  if (waitResult != 0) { return; }
+  XCTAssertNotNil(cold);
+  if (cold == nil) { return; }
+  XCTAssertFalse(cold.nodeLoaded);
+  XCTAssertEqualObjects(cold.attributedText, legacy.attributedText);
+  XCTAssertTrue(UIEdgeInsetsEqualToEdgeInsets(cold.textContainerInset, legacy.textContainerInset));
+  ASSizeRange range = ASSizeRangeMake(CGSizeZero, CGSizeMake(150, 100));
+  XCTAssertTrue(CGSizeEqualToSize([cold layoutThatFits:range].size, [legacy layoutThatFits:range].size));
+  XCTAssertEqualObjects(cold.textView.attributedText, legacy.textView.attributedText);
+  XCTAssertTrue(UIEdgeInsetsEqualToEdgeInsets(cold.textView.textContainerInset, legacy.textView.textContainerInset));
+}
+
 #pragma mark - ASEditableTextNode Tests
 
 - (void)testUITextInputTraitDefaults

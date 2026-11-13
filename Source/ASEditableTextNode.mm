@@ -145,6 +145,16 @@
 @implementation ASEditableTextNode
 
 #pragma mark - NSObject Overrides
++ (ASEditableTextNode *)coldNodeWithInitialAttributedText:(NSAttributedString *)attributedText
+                                       textContainerInset:(UIEdgeInsets)textContainerInset
+{
+  ASEditableTextNode *node = [[ASEditableTextNode alloc] init];
+  // The exact class cannot publish itself during initialization or customize these setters.
+  node.textContainerInset = textContainerInset;
+  node.attributedText = attributedText;
+  return node;
+}
+
 - (instancetype)init
 {
   return [self initWithTextKitComponents:[ASTextKitComponents componentsWithAttributedSeedString:nil textContainerSize:CGSizeZero]

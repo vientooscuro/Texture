@@ -29,6 +29,11 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (instancetype)init;
 
+/** Creates a fresh cold node with text and insets applied before publication or view loading. */
++ (ASEditableTextNode *)coldNodeWithInitialAttributedText:(nullable NSAttributedString *)attributedText
+                                       textContainerInset:(UIEdgeInsets)textContainerInset
+    NS_SWIFT_NAME(coldNode(initialAttributedText:textContainerInset:)) NS_SWIFT_NONISOLATED;
+
 /**
  * @abstract Initializes an editable text node using the provided TextKit components.
  *
