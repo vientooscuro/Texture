@@ -10,6 +10,8 @@
 #import <XCTest/XCTest.h>
 #import <AsyncDisplayKit/AsyncDisplayKit.h>
 #import <AsyncDisplayKit/ASCollectionViewFlowLayoutInspector.h>
+#import <AsyncDisplayKit/ASCollectionFlowLayoutDelegate.h>
+#import <AsyncDisplayKit/ASCollectionLayout.h>
 #import <AsyncDisplayKit/ASDataController.h>
 #import <AsyncDisplayKit/ASSectionContext.h>
 #import <vector>
@@ -393,6 +395,59 @@
 {
   ASCollectionNode *node = [[ASCollectionNode alloc] initWithFrame:CGRectZero collectionViewLayout:[[UICollectionViewFlowLayout alloc] init]];
   XCTAssert([node conformsToProtocol:@protocol(ASRangeControllerUpdateRangeProtocol)]);
+  XCTAssert([node conformsToProtocol:@protocol(UIGestureRecognizerDelegate)]);
+  XCTAssert([node respondsToSelector:@selector(gestureRecognizerShouldBegin:)]);
+}
+
+- (void)testBackgroundInitializationDefersCollectionViewCreation
+{
+  UICollectionViewFlowLayout *layout = [[UICollectionViewFlowLayout alloc] init];
+  XCTestExpectation *created = [self expectationWithDescription:@"Created on background thread"];
+  __block ASCollectionNode *node = nil;
+  __block BOOL loadedOnWorker = YES;
+  dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+    node = [[ASCollectionNode alloc] initWithFrame:CGRectMake(0, 0, 100, 100)
+                             collectionViewLayout:layout
+                                layoutFacilitator:nil];
+    loadedOnWorker = node.isNodeLoaded;
+    [created fulfill];
+  });
+  [self waitForExpectationsWithTimeout:3 handler:nil];
+  XCTAssertNotNil(node);
+  XCTAssertFalse(loadedOnWorker);
+  XCTAssertEqual(node.view.collectionViewLayout, layout);
+}
+
+- (void)testBackgroundInitializationConfiguresOwnedCollectionLayout
+{
+  ASCollectionFlowLayoutDelegate *delegate = [[ASCollectionFlowLayoutDelegate alloc] initWithScrollableDirections:ASScrollDirectionDown];
+  __weak ASCollectionFlowLayoutDelegate *weakDelegate = delegate;
+  ASCollectionLayout *layout = [[ASCollectionLayout alloc] initWithLayoutDelegate:delegate];
+  delegate = nil;
+  XCTAssertNotNil(weakDelegate);
+  XCTAssertEqual(layout.layoutDelegate, weakDelegate);
+  XCTAssertNil(layout.collectionNode);
+
+  XCTestExpectation *created = [self expectationWithDescription:@"Created on background thread"];
+  __block ASCollectionNode *node = nil;
+  __block BOOL loadedOnWorker = YES;
+  dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+    node = [[ASCollectionNode alloc] initWithFrame:CGRectMake(0, 0, 100, 100)
+                             collectionViewLayout:layout
+                                layoutFacilitator:nil];
+    loadedOnWorker = node.isNodeLoaded;
+    [created fulfill];
+  });
+  [self waitForExpectationsWithTimeout:3 handler:nil];
+  XCTAssertNotNil(node);
+  XCTAssertFalse(loadedOnWorker);
+  XCTAssertEqual(layout.collectionNode, node);
+  XCTAssertEqual(layout.layoutDelegate, weakDelegate);
+
+  ASCollectionView *view = node.view;
+  XCTAssertEqual(view.collectionViewLayout, layout);
+  XCTAssertEqual(layout.collectionNode, node);
+  XCTAssertEqual(layout.layoutDelegate, weakDelegate);
 }
 
 /**

@@ -21,16 +21,16 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * @default [ASCollectionView class] is used whenever this property is unset or nil.
  */
-@property (nullable, nonatomic) Class collectionViewClass;
+@property (nullable, nonatomic) Class collectionViewClass NS_SWIFT_UI_ACTOR;
 
 /**
  * The elements that are currently displayed. The "UIKit index space". Must be accessed on main thread.
  */
 @property (nonatomic, readonly) ASElementMap *visibleElements NS_SWIFT_UI_ACTOR;
 
-@property (nullable, readonly) id<ASCollectionLayoutDelegate> layoutDelegate;
+@property (nullable, readonly) id<ASCollectionLayoutDelegate> layoutDelegate NS_SWIFT_UI_ACTOR;
 
-@property (nullable, nonatomic, weak) id<ASBatchFetchingDelegate> batchFetchingDelegate;
+@property (nullable, nonatomic, weak) id<ASBatchFetchingDelegate> batchFetchingDelegate NS_SWIFT_UI_ACTOR;
 
 /**
  * When this mode is enabled, ASCollectionView matches the timing of UICollectionView as closely as
@@ -49,12 +49,12 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * @default defaults to ASCellLayoutModeNone.
  */
-@property (nonatomic) ASCellLayoutMode cellLayoutMode;
+@property (nonatomic) ASCellLayoutMode cellLayoutMode NS_SWIFT_UI_ACTOR;
 
 /**
  *  Returns YES if the ASCollectionNode contents are completely synchronized with the underlying collection-view layout.
  */
-@property (nonatomic, readonly, getter=isSynchronized) BOOL synchronized;
+@property (nonatomic, readonly, getter=isSynchronized) BOOL synchronized NS_SWIFT_UI_ACTOR;
 
 /**
  *  Schedules a block to be performed (on the main thread) as soon as the completion block is called
@@ -62,17 +62,20 @@ NS_ASSUME_NONNULL_BEGIN
  *
  *  When isSynchronized == YES, the block is run block immediately (before the method returns).
  */
-- (void)onDidFinishSynchronizing:(NS_SWIFT_UI_ACTOR void (^)(void))didFinishSynchronizing;
+- (void)onDidFinishSynchronizing:(NS_SWIFT_UI_ACTOR void (^)(void))didFinishSynchronizing NS_SWIFT_UI_ACTOR;
 
+/** For background initialization, pass an exclusively owned layout configured on the appropriate thread.
+ * Do not access or attach the layout concurrently; after loading, use it and the view on the main thread.
+ */
 - (instancetype)initWithFrame:(CGRect)frame collectionViewLayout:(UICollectionViewLayout *)layout layoutFacilitator:(nullable id<ASCollectionViewLayoutFacilitatorProtocol>)layoutFacilitator;
 
-- (instancetype)initWithLayoutDelegate:(id<ASCollectionLayoutDelegate>)layoutDelegate layoutFacilitator:(nullable id<ASCollectionViewLayoutFacilitatorProtocol>)layoutFacilitator;
+- (instancetype)initWithLayoutDelegate:(id<ASCollectionLayoutDelegate>)layoutDelegate layoutFacilitator:(nullable id<ASCollectionViewLayoutFacilitatorProtocol>)layoutFacilitator NS_SWIFT_UI_ACTOR;
 
-- (void)beginUpdates ASDISPLAYNODE_DEPRECATED_MSG("Use -performBatchUpdates:completion: instead.");
+- (void)beginUpdates ASDISPLAYNODE_DEPRECATED_MSG("Use -performBatchUpdates:completion: instead.") NS_SWIFT_UI_ACTOR;
 
-- (void)endUpdatesAnimated:(BOOL)animated ASDISPLAYNODE_DEPRECATED_MSG("Use -performBatchUpdates:completion: instead.");
+- (void)endUpdatesAnimated:(BOOL)animated ASDISPLAYNODE_DEPRECATED_MSG("Use -performBatchUpdates:completion: instead.") NS_SWIFT_UI_ACTOR;
 
-- (void)endUpdatesAnimated:(BOOL)animated completion:(nullable void (^)(BOOL))completion ASDISPLAYNODE_DEPRECATED_MSG("Use -performBatchUpdates:completion: instead.");
+- (void)endUpdatesAnimated:(BOOL)animated completion:(nullable void (^)(BOOL))completion ASDISPLAYNODE_DEPRECATED_MSG("Use -performBatchUpdates:completion: instead.") NS_SWIFT_UI_ACTOR;
 
 @end
 

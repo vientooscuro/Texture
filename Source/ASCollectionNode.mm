@@ -1236,3 +1236,6 @@ ASLayoutElementCollectionTableSetTraitCollection(_environmentStateLock)
 }
 
 @end
+
+@implementation ASCollectionNode (UIGestureRecognizerDelegate)
+@end

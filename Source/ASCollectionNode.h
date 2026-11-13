@@ -25,7 +25,7 @@ NS_ASSUME_NONNULL_BEGIN
  * ASCollectionNode is a node based class that wraps an ASCollectionView. It can be used
  * as a subnode of another node, and provide room for many (great) features and improvements later on.
  */
-@interface ASCollectionNode : ASDisplayNode <ASRangeControllerUpdateRangeProtocol, ASRangeManagingNode, UIGestureRecognizerDelegate>
+@interface ASCollectionNode : ASDisplayNode <ASRangeControllerUpdateRangeProtocol, ASRangeManagingNode>
 
 - (instancetype)init NS_UNAVAILABLE;
 
@@ -33,6 +33,9 @@ NS_ASSUME_NONNULL_BEGIN
  * Initializes an ASCollectionNode
  *
  * @discussion Initializes and returns a newly allocated collection node object with the specified layout.
+ * When initializing off the main thread, the caller must first configure the layout on the appropriate
+ * thread and transfer it exclusively to this initializer. Do not access or attach it concurrently.
+ * Once the node is loaded, access the layout and collection view on the main thread.
  *
  * @param layout The layout object to use for organizing items. The collection view stores a strong reference to the specified object. Must not be nil.
  */
@@ -42,6 +45,9 @@ NS_ASSUME_NONNULL_BEGIN
  * Initializes an ASCollectionNode
  *
  * @discussion Initializes and returns a newly allocated collection node object with the specified frame and layout.
+ * When initializing off the main thread, the caller must first configure the layout on the appropriate
+ * thread and transfer it exclusively to this initializer. Do not access or attach it concurrently.
+ * Once the node is loaded, access the layout and collection view on the main thread.
  *
  * @param frame The frame rectangle for the collection view, measured in points. The origin of the frame is relative to the superview in which you plan to add it. This frame is passed to the superclass during initialization.
  * @param layout The layout object to use for organizing items. The collection view stores a strong reference to the specified object. Must not be nil.
@@ -53,7 +59,7 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * @return view The corresponding ASCollectionView.
  */
-@property (readonly) ASCollectionView *view;
+@property (readonly) ASCollectionView *view NS_SWIFT_UI_ACTOR;
 
 /**
  * The object that acts as the asynchronous delegate of the collection view
@@ -63,7 +69,7 @@ NS_ASSUME_NONNULL_BEGIN
  * The delegate object is responsible for providing size constraints for nodes and indicating whether batch fetching should begin.
  * @note This is a convenience method which sets the asyncDelegate on the collection node's collection view.
  */
-@property (nullable, weak) id <ASCollectionDelegate>   delegate;
+@property (nullable, weak) id <ASCollectionDelegate>   delegate NS_SWIFT_UI_ACTOR;
 
 /**
  * The object that acts as the asynchronous data source of the collection view
@@ -73,70 +79,70 @@ NS_ASSUME_NONNULL_BEGIN
  * The datasource object is responsible for providing nodes or node creation blocks to the collection view.
  * @note This is a convenience method which sets the asyncDatasource on the collection node's collection view.
  */
-@property (nullable, weak) id <ASCollectionDataSource> dataSource;
+@property (nullable, weak) id <ASCollectionDataSource> dataSource NS_SWIFT_UI_ACTOR;
 
 /**
  * The number of screens left to scroll before the delegate -collectionNode:beginBatchFetchingWithContext: is called.
  *
  * Defaults to two screenfuls.
  */
-@property (nonatomic) CGFloat leadingScreensForBatching;
+@property (nonatomic) CGFloat leadingScreensForBatching NS_SWIFT_UI_ACTOR;
 
 /*
  * A Boolean value that determines whether the collection node will be flipped.
  * If the value of this property is YES, the first cell node will be at the bottom of the collection node (as opposed to the top by default). This is useful for chat/messaging apps. The default value is NO.
  */
-@property (nonatomic) BOOL inverted;
+@property (nonatomic) BOOL inverted NS_SWIFT_UI_ACTOR;
 
 /**
  * A Boolean value that indicates whether users can select items in the collection node.
  * If the value of this property is YES (the default), users can select items. If you want more fine-grained control over the selection of items, you must provide a delegate object and implement the appropriate methods of the UICollectionNodeDelegate protocol.
  */
-@property (nonatomic) BOOL allowsSelection;
+@property (nonatomic) BOOL allowsSelection NS_SWIFT_UI_ACTOR;
 
 /**
  * A Boolean value that determines whether users can select more than one item in the collection node.
  * This property controls whether multiple items can be selected simultaneously. The default value of this property is NO.
  * When the value of this property is YES, tapping a cell adds it to the current selection (assuming the delegate permits the cell to be selected). Tapping the cell again removes it from the selection.
  */
-@property (nonatomic) BOOL allowsMultipleSelection;
+@property (nonatomic) BOOL allowsMultipleSelection NS_SWIFT_UI_ACTOR;
 
 /**
  * A Boolean value that determines whether bouncing always occurs when vertical scrolling reaches the end of the content.
  * The default value of this property is NO.
  */
-@property (nonatomic) BOOL alwaysBounceVertical;
+@property (nonatomic) BOOL alwaysBounceVertical NS_SWIFT_UI_ACTOR;
 
 /**
  * A Boolean value that determines whether bouncing always occurs when horizontal scrolling reaches the end of the content view.
  * The default value of this property is NO.
  */
-@property (nonatomic) BOOL alwaysBounceHorizontal;
+@property (nonatomic) BOOL alwaysBounceHorizontal NS_SWIFT_UI_ACTOR;
 
 /**
  * A Boolean value that controls whether the vertical scroll indicator is visible.
  * The default value of this property is YES.
  */
-@property (nonatomic) BOOL showsVerticalScrollIndicator;
+@property (nonatomic) BOOL showsVerticalScrollIndicator NS_SWIFT_UI_ACTOR;
 
 /**
  * A Boolean value that controls whether the horizontal scroll indicator is visible.
  * The default value of this property is YES.
  */
-@property (nonatomic) BOOL showsHorizontalScrollIndicator;
+@property (nonatomic) BOOL showsHorizontalScrollIndicator NS_SWIFT_UI_ACTOR;
 
 /**
  * A Boolean value that determines whether paging is enabled for the scroll view.
  * The default value of this property is NO.
  */
-@property (nonatomic, getter=isPagingEnabled) BOOL pagingEnabled __TVOS_PROHIBITED;
+@property (nonatomic, getter=isPagingEnabled) BOOL pagingEnabled __TVOS_PROHIBITED NS_SWIFT_UI_ACTOR;
 
 /**
  * The layout used to organize the node's items.
  *
  * @discussion Assigning a new layout object to this property causes the new layout to be applied (without animations) to the node’s items.
  */
-@property (nonatomic) UICollectionViewLayout *collectionViewLayout;
+@property (nonatomic) UICollectionViewLayout *collectionViewLayout NS_SWIFT_UI_ACTOR;
 
 /**
  * Optional introspection object for the collection node's layout.
@@ -148,17 +154,17 @@ NS_ASSUME_NONNULL_BEGIN
  * collection layout subclasses will need to provide their own implementation of an inspector object for their
  * supplementary elements to be compatible with `ASCollectionNode`'s supplementary node support.
  */
-@property (nonatomic, weak) id<ASCollectionViewLayoutInspecting> layoutInspector;
+@property (nonatomic, weak) id<ASCollectionViewLayoutInspecting> layoutInspector NS_SWIFT_UI_ACTOR;
 
 /**
  * The distance that the content view is inset from the collection node edges. Defaults to UIEdgeInsetsZero.
  */
-@property (nonatomic) UIEdgeInsets contentInset;
+@property (nonatomic) UIEdgeInsets contentInset NS_SWIFT_UI_ACTOR;
 
 /**
  * The offset of the content view's origin from the collection node's origin. Defaults to CGPointZero.
  */
-@property (nonatomic) CGPoint contentOffset;
+@property (nonatomic) CGPoint contentOffset NS_SWIFT_UI_ACTOR;
 
 /**
  * Sets the offset from the content node’s origin to the collection node’s origin.
@@ -167,7 +173,7 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * @param animated YES to animate to this new offset at a constant velocity, NO to not aniamte and immediately make the transition.
  */
-- (void)setContentOffset:(CGPoint)contentOffset animated:(BOOL)animated;
+- (void)setContentOffset:(CGPoint)contentOffset animated:(BOOL)animated NS_SWIFT_UI_ACTOR;
 
 /**
  * Tuning parameters for a range type in full mode.
@@ -179,7 +185,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @see ASLayoutRangeMode
  * @see ASLayoutRangeType
  */
-- (ASRangeTuningParameters)tuningParametersForRangeType:(ASLayoutRangeType)rangeType AS_WARN_UNUSED_RESULT;
+- (ASRangeTuningParameters)tuningParametersForRangeType:(ASLayoutRangeType)rangeType AS_WARN_UNUSED_RESULT NS_SWIFT_UI_ACTOR;
 
 /**
  * Set the tuning parameters for a range type in full mode.
@@ -190,7 +196,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @see ASLayoutRangeMode
  * @see ASLayoutRangeType
  */
-- (void)setTuningParameters:(ASRangeTuningParameters)tuningParameters forRangeType:(ASLayoutRangeType)rangeType;
+- (void)setTuningParameters:(ASRangeTuningParameters)tuningParameters forRangeType:(ASLayoutRangeType)rangeType NS_SWIFT_UI_ACTOR;
 
 /**
  * Tuning parameters for a range type in the specified mode.
@@ -203,7 +209,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @see ASLayoutRangeMode
  * @see ASLayoutRangeType
  */
-- (ASRangeTuningParameters)tuningParametersForRangeMode:(ASLayoutRangeMode)rangeMode rangeType:(ASLayoutRangeType)rangeType AS_WARN_UNUSED_RESULT;
+- (ASRangeTuningParameters)tuningParametersForRangeMode:(ASLayoutRangeMode)rangeMode rangeType:(ASLayoutRangeType)rangeType AS_WARN_UNUSED_RESULT NS_SWIFT_UI_ACTOR;
 
 /**
  * Set the tuning parameters for a range type in the specified mode.
@@ -215,7 +221,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @see ASLayoutRangeMode
  * @see ASLayoutRangeType
  */
-- (void)setTuningParameters:(ASRangeTuningParameters)tuningParameters forRangeMode:(ASLayoutRangeMode)rangeMode rangeType:(ASLayoutRangeType)rangeType;
+- (void)setTuningParameters:(ASRangeTuningParameters)tuningParameters forRangeMode:(ASLayoutRangeMode)rangeMode rangeType:(ASLayoutRangeType)rangeType NS_SWIFT_UI_ACTOR;
 
 /**
  * Scrolls the collection to the given item.
@@ -233,14 +239,14 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * @return a bitmask of ASScrollDirection values.
  */
-@property (nonatomic, readonly) ASScrollDirection scrollDirection;
+@property (nonatomic, readonly) ASScrollDirection scrollDirection NS_SWIFT_UI_ACTOR;
 
 /**
  * Determines collection node's scrollable directions.
  *
  * @return a bitmask of ASScrollDirection values.
  */
-@property (nonatomic, readonly) ASScrollDirection scrollableDirections;
+@property (nonatomic, readonly) ASScrollDirection scrollableDirections NS_SWIFT_UI_ACTOR;
 
 #pragma mark - Editing
 
@@ -254,7 +260,7 @@ NS_ASSUME_NONNULL_BEGIN
  * methods. This method will register an internal backing view that will host the contents of the supplementary nodes
  * returned from the data source.
  */
-- (void)registerSupplementaryNodeOfKind:(NSString *)elementKind;
+- (void)registerSupplementaryNodeOfKind:(NSString *)elementKind NS_SWIFT_UI_ACTOR;
 
 /**
  *  Perform a batch of updates asynchronously, optionally disabling all animations in the batch. This method must be called from the main thread.
@@ -291,7 +297,7 @@ NS_ASSUME_NONNULL_BEGIN
  *
  *  This method will always return NO if called immediately after -waitUntilAllUpdatesAreProcessed.
  */
-@property (nonatomic, readonly) BOOL isProcessingUpdates;
+@property (nonatomic, readonly) BOOL isProcessingUpdates NS_SWIFT_UI_ACTOR;
 
 /**
  *  Schedules a block to be performed (on the main thread) after processing of performBatchUpdates:
@@ -306,12 +312,12 @@ NS_ASSUME_NONNULL_BEGIN
  *
  *  Calling -waitUntilAllUpdatesAreProcessed is one way to flush any pending update completion blocks.
  */
-- (void)onDidFinishProcessingUpdates:(NS_SWIFT_UI_ACTOR void (^)(void))didFinishProcessingUpdates;
+- (void)onDidFinishProcessingUpdates:(NS_SWIFT_UI_ACTOR void (^)(void))didFinishProcessingUpdates NS_SWIFT_UI_ACTOR;
 
 /**
  *  Blocks execution of the main thread until all section and item updates are committed to the view. This method must be called from the main thread.
  */
-- (void)waitUntilAllUpdatesAreProcessed;
+- (void)waitUntilAllUpdatesAreProcessed NS_SWIFT_UI_ACTOR;
 
 /**
  * Inserts one or more sections.
@@ -404,7 +410,7 @@ NS_ASSUME_NONNULL_BEGIN
  * the main thread.
  * @warning This method is substantially more expensive than UICollectionView's version.
  */
-- (void)reloadDataWithCompletion:(nullable NS_SWIFT_UI_ACTOR void (^)(void))completion;
+- (void)reloadDataWithCompletion:(nullable NS_SWIFT_UI_ACTOR void (^)(void))completion NS_SWIFT_UI_ACTOR;
 
 
 /**
@@ -412,21 +418,21 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * @warning This method is substantially more expensive than UICollectionView's version.
  */
-- (void)reloadData;
+- (void)reloadData NS_SWIFT_UI_ACTOR;
 
 /**
  * Triggers a relayout of all nodes.
  *
  * @discussion This method invalidates and lays out every cell node in the collection view.
  */
-- (void)relayoutItems;
+- (void)relayoutItems NS_SWIFT_UI_ACTOR;
 
 #pragma mark - Selection
 
 /**
  * The index paths of the selected items, or @c nil if no items are selected.
  */
-@property (nullable, nonatomic, copy, readonly) NSArray<NSIndexPath *> *indexPathsForSelectedItems;
+@property (nullable, nonatomic, copy, readonly) NSArray<NSIndexPath *> *indexPathsForSelectedItems NS_SWIFT_UI_ACTOR;
 
 /**
  * Selects the item at the specified index path and optionally scrolls it into view.
@@ -465,12 +471,12 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * @return The number of items.
  */
-- (NSInteger)numberOfItemsInSection:(NSInteger)section AS_WARN_UNUSED_RESULT;
+- (NSInteger)numberOfItemsInSection:(NSInteger)section AS_WARN_UNUSED_RESULT NS_SWIFT_UI_ACTOR;
 
 /**
  * The number of sections.
  */
-@property (nonatomic, readonly) NSInteger numberOfSections;
+@property (nonatomic, readonly) NSInteger numberOfSections NS_SWIFT_UI_ACTOR;
 
 /**
  * Similar to -visibleCells.
@@ -486,7 +492,7 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * @return The node for the given item, or @c nil if no item exists at the specified path.
  */
-- (nullable __kindof ASCellNode *)nodeForItemAtIndexPath:(NSIndexPath *)indexPath AS_WARN_UNUSED_RESULT;
+- (nullable __kindof ASCellNode *)nodeForItemAtIndexPath:(NSIndexPath *)indexPath AS_WARN_UNUSED_RESULT NS_SWIFT_UI_ACTOR;
 
 /**
  * Retrieves the node-model for the item at the given index path, if any.
@@ -497,7 +503,7 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * @warning This API is beta and subject to change. We'll try to provide an easy migration path.
  */
-- (nullable id)nodeModelForItemAtIndexPath:(NSIndexPath *)indexPath AS_WARN_UNUSED_RESULT;
+- (nullable id)nodeModelForItemAtIndexPath:(NSIndexPath *)indexPath AS_WARN_UNUSED_RESULT NS_SWIFT_UI_ACTOR;
 
 /**
  * Retrieve the index path for the item with the given node.
@@ -506,7 +512,7 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * @return The indexPath for this item.
  */
-- (nullable NSIndexPath *)indexPathForNode:(ASCellNode *)cellNode AS_WARN_UNUSED_RESULT;
+- (nullable NSIndexPath *)indexPathForNode:(ASCellNode *)cellNode AS_WARN_UNUSED_RESULT NS_SWIFT_UI_ACTOR;
 
 /**
  * Retrieve the index paths of all visible items.
@@ -545,13 +551,16 @@ NS_ASSUME_NONNULL_BEGIN
  *   be in the node index space. To get the context in the view index space (e.g. for subclasses
  *   of @c UICollectionViewLayout, the user will call the same method on @c ASCollectionView.
  */
-- (nullable id<ASSectionContext>)contextForSection:(NSInteger)section AS_WARN_UNUSED_RESULT;
+- (nullable id<ASSectionContext>)contextForSection:(NSInteger)section AS_WARN_UNUSED_RESULT NS_SWIFT_UI_ACTOR;
 
+@end
+
+@interface ASCollectionNode (UIGestureRecognizerDelegate) <UIGestureRecognizerDelegate>
 @end
 
 @interface ASCollectionNode (Deprecated)
 
-- (void)waitUntilAllUpdatesAreCommitted ASDISPLAYNODE_DEPRECATED_MSG("This method has been renamed to -waitUntilAllUpdatesAreProcessed.");
+- (void)waitUntilAllUpdatesAreCommitted ASDISPLAYNODE_DEPRECATED_MSG("This method has been renamed to -waitUntilAllUpdatesAreProcessed.") NS_SWIFT_UI_ACTOR;
 
 @end
 
