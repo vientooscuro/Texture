@@ -62,7 +62,8 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic, readonly) UITextView *textView NS_SWIFT_UI_ACTOR;
 
-@property (nonatomic, readonly, nullable) NSArray<NSValue*> *linesInfo;
+/** Immutable line rectangles from the latest published layout. */
+@property (nonatomic, readonly, nullable) NSArray<NSValue*> *linesInfo NS_SWIFT_NONISOLATED;
 
 //! @abstract The attributes to apply to new text being entered by the user.
 @property (nullable, nonatomic, copy) NSDictionary<NSString *, id> *typingAttributes;

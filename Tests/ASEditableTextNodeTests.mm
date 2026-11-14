@@ -9,12 +9,24 @@
 
 #import <XCTest/XCTest.h>
 #import <AsyncDisplayKit/ASLayout.h>
+#import <AsyncDisplayKit/ASDisplayNode+Subclasses.h>
 #import <AsyncDisplayKit/ASEditableTextNode.h>
 
 static BOOL CGSizeEqualToSizeWithIn(CGSize size1, CGSize size2, CGFloat delta)
 {
   return fabs(size1.width - size2.width) < delta && fabs(size1.height - size2.height) < delta;
 }
+
+@interface ASMeasurementLinesDeinitProbe : NSObject
+@property (nonatomic, copy) dispatch_block_t onDealloc;
+@end
+
+@implementation ASMeasurementLinesDeinitProbe
+- (void)dealloc
+{
+  if (_onDealloc) { _onDealloc(); }
+}
+@end
 
 @interface ASEditableTextNodeTests : XCTestCase
 @property (nonatomic) ASEditableTextNode *editableTextNode;
@@ -82,6 +94,63 @@ static BOOL CGSizeEqualToSizeWithIn(CGSize size1, CGSize size2, CGFloat delta)
   XCTAssertTrue(CGSizeEqualToSize([cold layoutThatFits:range].size, [legacy layoutThatFits:range].size));
   XCTAssertEqualObjects(cold.textView.attributedText, legacy.textView.attributedText);
   XCTAssertTrue(UIEdgeInsetsEqualToEdgeInsets(cold.textView.textContainerInset, legacy.textView.textContainerInset));
+}
+
+- (void)testMeasuredLinesAreImmutableAndReadableOnWorkerBeforeAndAfterLoad
+{
+  ASEditableTextNode *node = [[ASEditableTextNode alloc] init];
+  node.attributedText = self.attributedText;
+  node.maximumLinesToDisplay = 3;
+  [node calculateSizeThatFits:CGSizeMake(120, CGFLOAT_MAX)];
+  NSArray<NSValue *> *expected = node.linesInfo;
+  XCTAssertGreaterThan(expected.count, 0u);
+  XCTAssertFalse([expected isKindOfClass:[NSMutableArray class]]);
+
+  for (NSUInteger iteration = 0; iteration < 2; ++iteration) {
+    if (iteration == 1) {
+      (void)node.view;
+      node.attributedText = [[NSAttributedString alloc] initWithString:@"Updated text after loading with multiple lines to measure."];
+      [node calculateSizeThatFits:CGSizeMake(80, CGFLOAT_MAX)];
+      expected = node.linesInfo;
+      XCTAssertGreaterThan(expected.count, 0u);
+    }
+    dispatch_semaphore_t done = dispatch_semaphore_create(0);
+    __block NSArray<NSValue *> *actual = nil;
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
+      actual = node.linesInfo;
+      dispatch_semaphore_signal(done);
+    });
+    XCTAssertEqual(dispatch_semaphore_wait(done, dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC)), 0);
+    XCTAssertEqualObjects(actual, expected);
+  }
+}
+
+- (void)testPublishedLinesDoNotChangeWhenSourceArrayIsMutated
+{
+  ASEditableTextNode *node = [[ASEditableTextNode alloc] init];
+  NSMutableArray<NSValue *> *source = [NSMutableArray arrayWithObject:[NSValue valueWithCGRect:CGRectMake(0, 0, 20, 10)]];
+  [node setValue:source forKey:@"linesInfo"];
+  [source addObject:[NSValue valueWithCGRect:CGRectMake(0, 10, 20, 10)]];
+  XCTAssertEqual(node.linesInfo.count, 1u);
+}
+
+- (void)testReplacingLinesReleasesPreviousValuesOutsideSnapshotLock
+{
+  ASEditableTextNode *node = [[ASEditableTextNode alloc] init];
+  XCTestExpectation *released = [self expectationWithDescription:@"previous lines released"];
+  __weak ASEditableTextNode *weakNode = node;
+  dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
+    @autoreleasepool {
+      ASMeasurementLinesDeinitProbe *probe = [[ASMeasurementLinesDeinitProbe alloc] init];
+      probe.onDealloc = ^{
+        (void)weakNode.linesInfo;
+        [released fulfill];
+      };
+      [node setValue:@[probe] forKey:@"linesInfo"];
+    }
+    [node setValue:nil forKey:@"linesInfo"];
+  });
+  [self waitForExpectations:@[released] timeout:3.0];
 }
 
 #pragma mark - ASEditableTextNode Tests
