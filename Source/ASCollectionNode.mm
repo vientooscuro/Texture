@@ -17,6 +17,7 @@
 #import <AsyncDisplayKit/ASCollectionViewLayoutFacilitatorProtocol.h>
 #import <AsyncDisplayKit/ASDisplayNode+Beta.h>
 #import <AsyncDisplayKit/ASDisplayNode+Subclasses.h>
+#import <AsyncDisplayKit/ASDisplayNodeExtras.h>
 #import <AsyncDisplayKit/ASDisplayNode+FrameworkPrivate.h>
 #import <AsyncDisplayKit/ASCellNode+Internal.h>
 #import <AsyncDisplayKit/_ASHierarchyChangeSet.h>
@@ -68,6 +69,29 @@
 @end
 
 @implementation _ASCollectionPendingState
+
+@synthesize collectionViewLayout = _collectionViewLayout;
+
+- (void)setCollectionViewLayout:(UICollectionViewLayout *)layout
+{
+  if (_collectionViewLayout == layout) { return; }
+  if (ASDisplayNodeThreadIsMain()) {
+    _collectionViewLayout = layout;
+    return;
+  }
+  id previous = _collectionViewLayout;
+  _collectionViewLayout = layout;
+  ASPerformMainThreadDeallocation(&previous);
+}
+
+- (void)dealloc
+{
+  if (!ASDisplayNodeThreadIsMain()) {
+    id layout = _collectionViewLayout;
+    _collectionViewLayout = nil;
+    ASPerformMainThreadDeallocation(&layout);
+  }
+}
 
 #pragma mark Lifecycle
 
