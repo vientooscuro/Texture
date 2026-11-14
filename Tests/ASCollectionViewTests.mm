@@ -10,6 +10,8 @@
 #import <XCTest/XCTest.h>
 #import <AsyncDisplayKit/AsyncDisplayKit.h>
 #import <AsyncDisplayKit/ASCollectionViewFlowLayoutInspector.h>
+#import <AsyncDisplayKit/ASCollectionFlowLayoutDelegate.h>
+#import <AsyncDisplayKit/ASCollectionLayout.h>
 #import <AsyncDisplayKit/ASDataController.h>
 #import <AsyncDisplayKit/ASSectionContext.h>
 #import <vector>
@@ -172,6 +174,17 @@
 
 - (NSArray<NSString *> *)dataController:(ASDataController *)dataController supplementaryNodeKindsInSections:(NSIndexSet *)sections;
 
+@end
+
+@interface ASPendingLayoutReleaseProbe : UICollectionViewFlowLayout
+@property (nonatomic, copy) void (^releaseCallback)(BOOL isMain);
+@end
+
+@implementation ASPendingLayoutReleaseProbe
+- (void)dealloc
+{
+  if (_releaseCallback != nil) { _releaseCallback([NSThread isMainThread]); }
+}
 @end
 
 @interface ASCollectionViewTests : ASTestCase
@@ -393,6 +406,59 @@
 {
   ASCollectionNode *node = [[ASCollectionNode alloc] initWithFrame:CGRectZero collectionViewLayout:[[UICollectionViewFlowLayout alloc] init]];
   XCTAssert([node conformsToProtocol:@protocol(ASRangeControllerUpdateRangeProtocol)]);
+  XCTAssert([node conformsToProtocol:@protocol(UIGestureRecognizerDelegate)]);
+  XCTAssert([node respondsToSelector:@selector(gestureRecognizerShouldBegin:)]);
+}
+
+- (void)testBackgroundInitializationDefersCollectionViewCreation
+{
+  UICollectionViewFlowLayout *layout = [[UICollectionViewFlowLayout alloc] init];
+  XCTestExpectation *created = [self expectationWithDescription:@"Created on background thread"];
+  __block ASCollectionNode *node = nil;
+  __block BOOL loadedOnWorker = YES;
+  dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+    node = [[ASCollectionNode alloc] initWithFrame:CGRectMake(0, 0, 100, 100)
+                             collectionViewLayout:layout
+                                layoutFacilitator:nil];
+    loadedOnWorker = node.isNodeLoaded;
+    [created fulfill];
+  });
+  [self waitForExpectationsWithTimeout:3 handler:nil];
+  XCTAssertNotNil(node);
+  XCTAssertFalse(loadedOnWorker);
+  XCTAssertEqual(node.view.collectionViewLayout, layout);
+}
+
+- (void)testBackgroundInitializationConfiguresOwnedCollectionLayout
+{
+  ASCollectionFlowLayoutDelegate *delegate = [[ASCollectionFlowLayoutDelegate alloc] initWithScrollableDirections:ASScrollDirectionDown];
+  __weak ASCollectionFlowLayoutDelegate *weakDelegate = delegate;
+  ASCollectionLayout *layout = [[ASCollectionLayout alloc] initWithLayoutDelegate:delegate];
+  delegate = nil;
+  XCTAssertNotNil(weakDelegate);
+  XCTAssertEqual(layout.layoutDelegate, weakDelegate);
+  XCTAssertNil(layout.collectionNode);
+
+  XCTestExpectation *created = [self expectationWithDescription:@"Created on background thread"];
+  __block ASCollectionNode *node = nil;
+  __block BOOL loadedOnWorker = YES;
+  dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+    node = [[ASCollectionNode alloc] initWithFrame:CGRectMake(0, 0, 100, 100)
+                             collectionViewLayout:layout
+                                layoutFacilitator:nil];
+    loadedOnWorker = node.isNodeLoaded;
+    [created fulfill];
+  });
+  [self waitForExpectationsWithTimeout:3 handler:nil];
+  XCTAssertNotNil(node);
+  XCTAssertFalse(loadedOnWorker);
+  XCTAssertEqual(layout.collectionNode, node);
+  XCTAssertEqual(layout.layoutDelegate, weakDelegate);
+
+  ASCollectionView *view = node.view;
+  XCTAssertEqual(view.collectionViewLayout, layout);
+  XCTAssertEqual(layout.collectionNode, node);
+  XCTAssertEqual(layout.layoutDelegate, weakDelegate);
 }
 
 /**
@@ -1356,6 +1422,105 @@
                  @"delegate should transfer from pending state");
   XCTAssertEqual(view.asyncDataSource, dataSource,
                  @"dataSource should transfer from pending state");
+}
+
+- (void)testColdCollectionReleasesOnlyOwnedLayoutOnMain
+{
+  XCTAssertTrue([NSThread isMainThread]);
+  XCTestExpectation *released = [self expectationWithDescription:@"cold layout released"];
+  __weak ASPendingLayoutReleaseProbe *weakLayout;
+  __block ASCollectionNode *node;
+  @autoreleasepool {
+    ASPendingLayoutReleaseProbe *layout = [ASPendingLayoutReleaseProbe new];
+    layout.releaseCallback = ^(BOOL isMain) { XCTAssertTrue(isMain); [released fulfill]; };
+    weakLayout = layout;
+    node = [[ASCollectionNode alloc] initWithCollectionViewLayout:layout];
+    XCTAssertEqual(node.collectionViewLayout, layout);
+  }
+  dispatch_semaphore_t done = dispatch_semaphore_create(0);
+  dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
+    @autoreleasepool { node = nil; }
+    dispatch_semaphore_signal(done);
+  });
+  XCTAssertEqual(dispatch_semaphore_wait(done, dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC)), 0);
+  XCTAssertNotNil(weakLayout, @"The main runloop has not drained the transferred reference yet");
+  [self waitForExpectationsWithTimeout:5 handler:nil];
+  XCTAssertNil(weakLayout);
+}
+
+- (void)testColdReplacementReleasesPreviousLayoutOnMainAndPreservesIdentity
+{
+  XCTAssertTrue([NSThread isMainThread]);
+  XCTestExpectation *firstReleased = [self expectationWithDescription:@"replaced layout released"];
+  XCTestExpectation *secondReleased = [self expectationWithDescription:@"remaining layout released"];
+  __weak ASPendingLayoutReleaseProbe *weakFirst;
+  __weak ASPendingLayoutReleaseProbe *weakSecond;
+  __block ASCollectionNode *node;
+  __block ASPendingLayoutReleaseProbe *replacement;
+  @autoreleasepool {
+    ASPendingLayoutReleaseProbe *first = [ASPendingLayoutReleaseProbe new];
+    first.releaseCallback = ^(BOOL isMain) { XCTAssertTrue(isMain); [firstReleased fulfill]; };
+    weakFirst = first;
+    node = [[ASCollectionNode alloc] initWithCollectionViewLayout:first];
+    replacement = [ASPendingLayoutReleaseProbe new];
+    replacement.releaseCallback = ^(BOOL isMain) { XCTAssertTrue(isMain); [secondReleased fulfill]; };
+    weakSecond = replacement;
+  }
+  dispatch_semaphore_t done = dispatch_semaphore_create(0);
+  dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
+    @autoreleasepool {
+      node.collectionViewLayout = replacement;
+      node.collectionViewLayout = replacement;
+      replacement = nil;
+    }
+    dispatch_semaphore_signal(done);
+  });
+  XCTAssertEqual(dispatch_semaphore_wait(done, dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC)), 0);
+  XCTAssertNotNil(weakFirst);
+  XCTAssertNotNil(weakSecond);
+  @autoreleasepool {
+    XCTAssertEqual(node.collectionViewLayout, weakSecond);
+  }
+  node = nil;
+  [self waitForExpectationsWithTimeout:5 handler:nil];
+  XCTAssertNil(weakFirst);
+  XCTAssertNil(weakSecond);
+}
+
+- (void)testLoadedCollectionReleasePreservesLayoutMainDeallocation
+{
+  XCTAssertTrue([NSThread isMainThread]);
+  XCTestExpectation *released = [self expectationWithDescription:@"loaded layout released"];
+  __weak ASPendingLayoutReleaseProbe *weakLayout;
+  __block ASCollectionNode *node;
+  @autoreleasepool {
+    ASPendingLayoutReleaseProbe *layout = [ASPendingLayoutReleaseProbe new];
+    layout.releaseCallback = ^(BOOL isMain) { XCTAssertTrue(isMain); [released fulfill]; };
+    weakLayout = layout;
+    node = [[ASCollectionNode alloc] initWithCollectionViewLayout:layout];
+    XCTAssertEqual(node.view.collectionViewLayout, layout);
+  }
+  dispatch_semaphore_t done = dispatch_semaphore_create(0);
+  dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
+    @autoreleasepool { node = nil; }
+    dispatch_semaphore_signal(done);
+  });
+  XCTAssertEqual(dispatch_semaphore_wait(done, dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC)), 0);
+  [self waitForExpectationsWithTimeout:5 handler:nil];
+  XCTAssertNil(weakLayout);
+}
+
+- (void)testLoadedCollectionKeepsExactLayoutIdentity
+{
+  XCTAssertTrue([NSThread isMainThread]);
+  ASPendingLayoutReleaseProbe *layout = [ASPendingLayoutReleaseProbe new];
+  layout.minimumLineSpacing = 7;
+  ASCollectionNode *node = [[ASCollectionNode alloc] initWithCollectionViewLayout:layout];
+  XCTAssertEqual(node.collectionViewLayout, layout);
+  ASCollectionView *view = node.view;
+  XCTAssertEqual(node.collectionViewLayout, layout);
+  XCTAssertEqual(view.collectionViewLayout, layout);
+  XCTAssertEqual(((UICollectionViewFlowLayout *)view.collectionViewLayout).minimumLineSpacing, 7);
 }
 
 @end

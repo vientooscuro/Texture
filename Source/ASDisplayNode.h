@@ -898,13 +898,15 @@ typedef NS_ENUM(NSInteger, ASLayoutEngineType) {
 
 /**
  * @discussion A place to perform your animation. New nodes have been inserted here. You can also use this time to re-order the hierarchy.
+ * Called on the main thread.
  */
-- (void)animateLayoutTransition:(nonnull id<ASContextTransitioning>)context;
+- (void)animateLayoutTransition:(nonnull id<ASContextTransitioning>)context NS_SWIFT_UI_ACTOR;
 
 /**
  * @discussion A place to clean up your nodes after the transition
+ * Called on the main thread.
  */
-- (void)didCompleteLayoutTransition:(nonnull id<ASContextTransitioning>)context;
+- (void)didCompleteLayoutTransition:(nonnull id<ASContextTransitioning>)context NS_SWIFT_UI_ACTOR;
 
 /**
  * @abstract Transitions the current layout with a new constrained size. Must be called on main thread.

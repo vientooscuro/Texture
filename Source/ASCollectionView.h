@@ -39,6 +39,9 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic, weak, readonly) ASCollectionNode *collectionNode;
 
+/// The batch-fetching context owned by this view.
+@property (nonatomic, strong, readonly) ASBatchContext *batchContext NS_SWIFT_UI_ACTOR;
+
 /**
  * Retrieves the node for the item at the given index path.
  *

@@ -117,6 +117,8 @@
 
   // TextKit.
   AS::RecursiveMutex _textKitLock;
+  AS::Mutex _measurementLinesLock;
+  NSArray<NSValue *> *_measurementLines;
   ASTextKitComponents *_textKitComponents;
   ASTextKitComponents *_placeholderTextKitComponents;
   // Forwards NSLayoutManagerDelegate methods related to word kerning
@@ -145,6 +147,16 @@
 @implementation ASEditableTextNode
 
 #pragma mark - NSObject Overrides
++ (ASEditableTextNode *)coldNodeWithInitialAttributedText:(NSAttributedString *)attributedText
+                                       textContainerInset:(UIEdgeInsets)textContainerInset
+{
+  ASEditableTextNode *node = [[ASEditableTextNode alloc] init];
+  // The exact class cannot publish itself during initialization or customize these setters.
+  node.textContainerInset = textContainerInset;
+  node.attributedText = attributedText;
+  return node;
+}
+
 - (instancetype)init
 {
   return [self initWithTextKitComponents:[ASTextKitComponents componentsWithAttributedSeedString:nil textContainerSize:CGSizeZero]
@@ -313,6 +325,24 @@
 
 #pragma mark - Configuration
 @synthesize delegate = _delegate;
+
+- (NSArray<NSValue *> *)linesInfo
+{
+  AS::MutexLocker l(_measurementLinesLock);
+  return _measurementLines;
+}
+
+- (void)setLinesInfo:(NSArray<NSValue *> *)linesInfo
+{
+  NSArray<NSValue *> *snapshot = [linesInfo copy];
+  __attribute__((objc_precise_lifetime)) NSArray<NSValue *> *previous;
+  {
+    AS::MutexLocker l(_measurementLinesLock);
+    previous = _measurementLines;
+    _measurementLines = snapshot;
+  }
+  (void)previous;
+}
 
 - (void)setScrollEnabled:(BOOL)scrollEnabled
 {

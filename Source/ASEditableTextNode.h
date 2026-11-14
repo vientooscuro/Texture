@@ -29,6 +29,11 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (instancetype)init;
 
+/** Creates a fresh cold node with text and insets applied before publication or view loading. */
++ (ASEditableTextNode *)coldNodeWithInitialAttributedText:(nullable NSAttributedString *)attributedText
+                                       textContainerInset:(UIEdgeInsets)textContainerInset
+    NS_SWIFT_NAME(coldNode(initialAttributedText:textContainerInset:)) NS_SWIFT_NONISOLATED;
+
 /**
  * @abstract Initializes an editable text node using the provided TextKit components.
  *
@@ -57,7 +62,8 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic, readonly) UITextView *textView NS_SWIFT_UI_ACTOR;
 
-@property (nonatomic, readonly, nullable) NSArray<NSValue*> *linesInfo;
+/** Immutable line rectangles from the latest published layout. */
+@property (nonatomic, readonly, nullable) NSArray<NSValue*> *linesInfo NS_SWIFT_NONISOLATED;
 
 //! @abstract The attributes to apply to new text being entered by the user.
 @property (nullable, nonatomic, copy) NSDictionary<NSString *, id> *typingAttributes;

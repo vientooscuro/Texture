@@ -11,6 +11,7 @@
 
 #import <AsyncDisplayKit/ASCollectionViewProtocols.h>
 #import <AsyncDisplayKit/ASBaseDefines.h>
+#import <AsyncDisplayKit/ASBatchContext.h>
 #import <AsyncDisplayKit/ASLayoutRangeType.h>
 #import <AsyncDisplayKit/ASTableViewProtocols.h>
 
@@ -32,6 +33,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, weak, readonly) ASTableNode *tableNode;
 
 @property (nonatomic) ASCellLayoutMode cellLayoutMode;
+
+/// The batch-fetching context owned by this view.
+@property (nonatomic, strong, readonly) ASBatchContext *batchContext NS_SWIFT_UI_ACTOR;
 
 /**
  * Retrieves the node for the row at the given index path.
