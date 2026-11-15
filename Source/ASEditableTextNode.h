@@ -16,6 +16,16 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol ASEditableTextNodeDelegate;
 @class ASTextKitComponents;
 
+typedef struct {
+  NSUInteger maximumLinesToDisplay;
+  uint64_t revision;
+} ASEditableTextLineLimitSnapshot;
+
+typedef struct {
+  UIEdgeInsets inset;
+  uint64_t revision;
+} ASEditableTextInsetSnapshot;
+
 /**
  @abstract Implements a node that supports text editing.
  @discussion Does not support layer backing.
@@ -28,6 +38,11 @@ NS_ASSUME_NONNULL_BEGIN
  * @return An initialized ASEditableTextNode.
  */
 - (instancetype)init;
+
+/** Initializes a fresh node with the requested scroll state before it is published or its view is loaded.
+ Subclasses must not publish or load the node during initialization. This does not invoke overridden
+ initWithTextKitComponents:placeholderTextKitComponents: or scrollEnabled setters. */
+- (instancetype)initWithInitialScrollEnabled:(BOOL)scrollEnabled NS_SWIFT_NONISOLATED;
 
 /** Creates a fresh cold node with text and insets applied before publication or view loading. */
 + (ASEditableTextNode *)coldNodeWithInitialAttributedText:(nullable NSAttributedString *)attributedText
@@ -101,11 +116,23 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic) UIEdgeInsets textContainerInset;
 
+/** Atomically snapshots the base implementation's inset and revision. Subclasses overriding the
+ property must provide a consistent, thread-safe snapshot when using this method. */
+- (ASEditableTextInsetSnapshot)textContainerInsetSnapshot NS_SWIFT_NONISOLATED;
+
 /**
  @abstract The maximum number of lines to display. Additional lines will require scrolling.
  @default 0 (No limit)
  */
 @property (nonatomic) NSUInteger maximumLinesToDisplay;
+
+/** Returns the stored line limit and its revision atomically. Every assignment advances the revision.
+ Subclasses overriding the property must also override this method with an equivalent thread-safe snapshot. */
+- (ASEditableTextLineLimitSnapshot)lineLimitSnapshot NS_SWIFT_NONISOLATED;
+
+/** Updates the base implementation's line limit from any thread. This bypasses overrides of the property setter.
+ Use only where the concrete node type is known not to override that setter. */
+- (void)updateLineLimitForMeasurement:(NSUInteger)maximumLines NS_SWIFT_NONISOLATED;
 
 /**
   @abstract Indicates whether the receiver's text view is the first responder, and thus has the keyboard visible and is prepared for editing by the user.

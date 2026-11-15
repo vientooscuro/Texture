@@ -117,6 +117,12 @@
 
   // TextKit.
   AS::RecursiveMutex _textKitLock;
+  AS::Mutex _textContainerInsetLock;
+  UIEdgeInsets _textContainerInset;
+  uint64_t _textContainerInsetRevision;
+  AS::Mutex _maximumLinesLock;
+  NSUInteger _maximumLinesToDisplay;
+  uint64_t _maximumLinesRevision;
   AS::Mutex _measurementLinesLock;
   NSArray<NSValue *> *_measurementLines;
   ASTextKitComponents *_textKitComponents;
@@ -163,14 +169,30 @@
             placeholderTextKitComponents:[ASTextKitComponents componentsWithAttributedSeedString:nil textContainerSize:CGSizeZero]];
 }
 
+- (instancetype)initWithInitialScrollEnabled:(BOOL)scrollEnabled
+{
+  return [self _initWithTextKitComponents:[ASTextKitComponents componentsWithAttributedSeedString:nil textContainerSize:CGSizeZero]
+            placeholderTextKitComponents:[ASTextKitComponents componentsWithAttributedSeedString:nil textContainerSize:CGSizeZero]
+                    initialScrollEnabled:scrollEnabled];
+}
+
 - (instancetype)initWithTextKitComponents:(ASTextKitComponents *)textKitComponents
              placeholderTextKitComponents:(ASTextKitComponents *)placeholderTextKitComponents
+{
+  return [self _initWithTextKitComponents:textKitComponents
+            placeholderTextKitComponents:placeholderTextKitComponents
+                    initialScrollEnabled:YES];
+}
+
+- (instancetype)_initWithTextKitComponents:(ASTextKitComponents *)textKitComponents
+              placeholderTextKitComponents:(ASTextKitComponents *)placeholderTextKitComponents
+                      initialScrollEnabled:(BOOL)scrollEnabled
 {
   if (!(self = [super init]))
     return nil;
 
   _displayingPlaceholder = YES;
-  _scrollEnabled = YES;
+  _scrollEnabled = scrollEnabled;
 
   // Create the scaffolding for the text view.
   _textKitComponents = textKitComponents;
@@ -248,13 +270,18 @@
 - (CGSize)calculateSizeThatFits:(CGSize)constrainedSize
 {
   ASTextKitComponents *displayedComponents = [self isDisplayingPlaceholder] ? _placeholderTextKitComponents : _textKitComponents;
+  NSUInteger maximumLines;
+  {
+    AS::MutexLocker l(_maximumLinesLock);
+    maximumLines = _maximumLinesToDisplay;
+  }
   
   CGSize textSize;
   
-  if (_maximumLinesToDisplay > 0) {
+  if (maximumLines > 0) {
     NSMutableArray<NSValue*> *linesInfo = [NSMutableArray new];
     textSize = [displayedComponents sizeForConstrainedWidth:constrainedSize.width
-                                        forMaxNumberOfLines: _maximumLinesToDisplay
+                                        forMaxNumberOfLines: maximumLines
                                                   linesInfo:&linesInfo];
     self.linesInfo = linesInfo;
   } else {
@@ -262,8 +289,13 @@
     self.linesInfo = nil;
   }
   
-  CGFloat width = std::ceil(textSize.width + _textContainerInset.left + _textContainerInset.right);
-  CGFloat height = std::ceil(textSize.height + _textContainerInset.top + _textContainerInset.bottom);
+  UIEdgeInsets inset;
+  {
+    AS::MutexLocker l(_textContainerInsetLock);
+    inset = _textContainerInset;
+  }
+  CGFloat width = std::ceil(textSize.width + inset.left + inset.right);
+  CGFloat height = std::ceil(textSize.height + inset.top + inset.bottom);
   return CGSizeMake(std::fmin(width, constrainedSize.width), std::fmin(height, constrainedSize.height));
 }
 
@@ -293,9 +325,25 @@
 {
   AS::MutexLocker l(_textKitLock);
 
-  _textContainerInset = textContainerInset;
+  {
+    AS::MutexLocker insetLock(_textContainerInsetLock);
+    _textContainerInset = textContainerInset;
+    ++_textContainerInsetRevision;
+  }
   _textKitComponents.textView.textContainerInset = textContainerInset;
   _placeholderTextKitComponents.textView.textContainerInset = textContainerInset;
+}
+
+- (UIEdgeInsets)textContainerInset
+{
+  AS::MutexLocker l(_textContainerInsetLock);
+  return _textContainerInset;
+}
+
+- (ASEditableTextInsetSnapshot)textContainerInsetSnapshot
+{
+  AS::MutexLocker l(_textContainerInsetLock);
+  return { _textContainerInset, _textContainerInsetRevision };
 }
 
 - (void)setOpaque:(BOOL)opaque
@@ -361,8 +409,34 @@
 
 - (void)setMaximumLinesToDisplay:(NSUInteger)maximumLines
 {
-  _maximumLinesToDisplay = maximumLines;
+  {
+    AS::MutexLocker l(_maximumLinesLock);
+    _maximumLinesToDisplay = maximumLines;
+    ++_maximumLinesRevision;
+  }
   [self setNeedsLayout];
+}
+
+- (void)updateLineLimitForMeasurement:(NSUInteger)maximumLines
+{
+  {
+    AS::MutexLocker l(_maximumLinesLock);
+    _maximumLinesToDisplay = maximumLines;
+    ++_maximumLinesRevision;
+  }
+  [self setNeedsLayout];
+}
+
+- (NSUInteger)maximumLinesToDisplay
+{
+  AS::MutexLocker l(_maximumLinesLock);
+  return _maximumLinesToDisplay;
+}
+
+- (ASEditableTextLineLimitSnapshot)lineLimitSnapshot
+{
+  AS::MutexLocker l(_maximumLinesLock);
+  return { _maximumLinesToDisplay, _maximumLinesRevision };
 }
 
 #pragma mark -
