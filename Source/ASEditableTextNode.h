@@ -34,6 +34,11 @@ typedef struct {
  */
 - (instancetype)init;
 
+/** Initializes a fresh node with the requested scroll state before it is published or its view is loaded.
+ Subclasses must not publish or load the node during initialization. This does not invoke overridden
+ initWithTextKitComponents:placeholderTextKitComponents: or scrollEnabled setters. */
+- (instancetype)initWithInitialScrollEnabled:(BOOL)scrollEnabled NS_SWIFT_NONISOLATED;
+
 /** Creates a fresh cold node with text and insets applied before publication or view loading. */
 + (ASEditableTextNode *)coldNodeWithInitialAttributedText:(nullable NSAttributedString *)attributedText
                                        textContainerInset:(UIEdgeInsets)textContainerInset

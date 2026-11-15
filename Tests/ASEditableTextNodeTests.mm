@@ -42,6 +42,16 @@ static BOOL CGSizeEqualToSizeWithIn(CGSize size1, CGSize size2, CGFloat delta)
 }
 @end
 
+@interface ASInitiallyNonScrollingTextNode : ASEditableTextNode
+@end
+
+@implementation ASInitiallyNonScrollingTextNode
+- (instancetype)init
+{
+  return [super initWithInitialScrollEnabled:NO];
+}
+@end
+
 @interface ASEditableTextNodeTests : XCTestCase
 @property (nonatomic) ASEditableTextNode *editableTextNode;
 @property (nonatomic, copy) NSAttributedString *attributedText;
@@ -79,6 +89,48 @@ static BOOL CGSizeEqualToSizeWithIn(CGSize size1, CGSize size2, CGFloat delta)
 {
   ASEditableTextNode *node = [[ASEditableTextNode alloc] init];
   XCTAssertTrue([[node class] isSubclassOfClass:[ASEditableTextNode class]], @"ASEditableTextNode alloc should return an instance of ASEditableTextNode, instead returned %@", [node class]);
+}
+
+- (void)testInitialScrollStateMatchesLegacyBeforeAndAfterViewLoading
+{
+  for (NSNumber *value in @[@NO, @YES]) {
+    BOOL scrollEnabled = value.boolValue;
+    ASEditableTextNode *legacy = [[ASEditableTextNode alloc] init];
+    legacy.scrollEnabled = scrollEnabled;
+    __block ASEditableTextNode *candidate = nil;
+    dispatch_semaphore_t done = dispatch_semaphore_create(0);
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+      candidate = [[ASEditableTextNode alloc] initWithInitialScrollEnabled:scrollEnabled];
+      dispatch_semaphore_signal(done);
+    });
+    long result = dispatch_semaphore_wait(done, dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC));
+    XCTAssertEqual(result, 0);
+    if (result != 0) return;
+    XCTAssertFalse(candidate.nodeLoaded);
+    XCTAssertEqual(candidate.scrollEnabled, legacy.scrollEnabled);
+    UITextView *candidateView = candidate.textView;
+    UITextView *legacyView = legacy.textView;
+    XCTAssertEqual(candidateView.scrollEnabled, legacyView.scrollEnabled);
+    XCTAssertEqual(candidateView.scrollsToTop, legacyView.scrollsToTop);
+    XCTAssertEqual(candidateView.panGestureRecognizer.enabled, legacyView.panGestureRecognizer.enabled);
+    XCTAssertEqual([candidateView gestureRecognizerShouldBegin:candidateView.panGestureRecognizer],
+                   [legacyView gestureRecognizerShouldBegin:legacyView.panGestureRecognizer]);
+    candidate.scrollEnabled = !scrollEnabled;
+    legacy.scrollEnabled = !scrollEnabled;
+    XCTAssertEqual(candidateView.scrollsToTop, legacyView.scrollsToTop);
+    XCTAssertEqual(candidateView.scrollEnabled, legacyView.scrollEnabled);
+    XCTAssertEqual([candidateView gestureRecognizerShouldBegin:candidateView.panGestureRecognizer],
+                   [legacyView gestureRecognizerShouldBegin:legacyView.panGestureRecognizer]);
+  }
+}
+
+- (void)testSubclassCanInitializeWithScrollingDisabled
+{
+  ASInitiallyNonScrollingTextNode *node = [[ASInitiallyNonScrollingTextNode alloc] init];
+  XCTAssertNotNil(node);
+  XCTAssertFalse(node.nodeLoaded);
+  XCTAssertFalse(node.scrollEnabled);
+  XCTAssertFalse(node.textView.scrollsToTop);
 }
 
 - (void)testColdInitialTextAndInsetsMatchLegacyBeforeAndAfterLoading

@@ -166,14 +166,30 @@
             placeholderTextKitComponents:[ASTextKitComponents componentsWithAttributedSeedString:nil textContainerSize:CGSizeZero]];
 }
 
+- (instancetype)initWithInitialScrollEnabled:(BOOL)scrollEnabled
+{
+  return [self _initWithTextKitComponents:[ASTextKitComponents componentsWithAttributedSeedString:nil textContainerSize:CGSizeZero]
+            placeholderTextKitComponents:[ASTextKitComponents componentsWithAttributedSeedString:nil textContainerSize:CGSizeZero]
+                    initialScrollEnabled:scrollEnabled];
+}
+
 - (instancetype)initWithTextKitComponents:(ASTextKitComponents *)textKitComponents
              placeholderTextKitComponents:(ASTextKitComponents *)placeholderTextKitComponents
+{
+  return [self _initWithTextKitComponents:textKitComponents
+            placeholderTextKitComponents:placeholderTextKitComponents
+                    initialScrollEnabled:YES];
+}
+
+- (instancetype)_initWithTextKitComponents:(ASTextKitComponents *)textKitComponents
+              placeholderTextKitComponents:(ASTextKitComponents *)placeholderTextKitComponents
+                      initialScrollEnabled:(BOOL)scrollEnabled
 {
   if (!(self = [super init]))
     return nil;
 
   _displayingPlaceholder = YES;
-  _scrollEnabled = YES;
+  _scrollEnabled = scrollEnabled;
 
   // Create the scaffolding for the text view.
   _textKitComponents = textKitComponents;
