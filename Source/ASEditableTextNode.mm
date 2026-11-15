@@ -117,6 +117,9 @@
 
   // TextKit.
   AS::RecursiveMutex _textKitLock;
+  AS::Mutex _textContainerInsetLock;
+  UIEdgeInsets _textContainerInset;
+  uint64_t _textContainerInsetRevision;
   AS::Mutex _maximumLinesLock;
   NSUInteger _maximumLinesToDisplay;
   uint64_t _maximumLinesRevision;
@@ -286,8 +289,13 @@
     self.linesInfo = nil;
   }
   
-  CGFloat width = std::ceil(textSize.width + _textContainerInset.left + _textContainerInset.right);
-  CGFloat height = std::ceil(textSize.height + _textContainerInset.top + _textContainerInset.bottom);
+  UIEdgeInsets inset;
+  {
+    AS::MutexLocker l(_textContainerInsetLock);
+    inset = _textContainerInset;
+  }
+  CGFloat width = std::ceil(textSize.width + inset.left + inset.right);
+  CGFloat height = std::ceil(textSize.height + inset.top + inset.bottom);
   return CGSizeMake(std::fmin(width, constrainedSize.width), std::fmin(height, constrainedSize.height));
 }
 
@@ -317,9 +325,25 @@
 {
   AS::MutexLocker l(_textKitLock);
 
-  _textContainerInset = textContainerInset;
+  {
+    AS::MutexLocker insetLock(_textContainerInsetLock);
+    _textContainerInset = textContainerInset;
+    ++_textContainerInsetRevision;
+  }
   _textKitComponents.textView.textContainerInset = textContainerInset;
   _placeholderTextKitComponents.textView.textContainerInset = textContainerInset;
+}
+
+- (UIEdgeInsets)textContainerInset
+{
+  AS::MutexLocker l(_textContainerInsetLock);
+  return _textContainerInset;
+}
+
+- (ASEditableTextInsetSnapshot)textContainerInsetSnapshot
+{
+  AS::MutexLocker l(_textContainerInsetLock);
+  return { _textContainerInset, _textContainerInsetRevision };
 }
 
 - (void)setOpaque:(BOOL)opaque

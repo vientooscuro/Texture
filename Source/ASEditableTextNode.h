@@ -21,6 +21,11 @@ typedef struct {
   uint64_t revision;
 } ASEditableTextLineLimitSnapshot;
 
+typedef struct {
+  UIEdgeInsets inset;
+  uint64_t revision;
+} ASEditableTextInsetSnapshot;
+
 /**
  @abstract Implements a node that supports text editing.
  @discussion Does not support layer backing.
@@ -110,6 +115,10 @@ typedef struct {
  @abstract The textContainerInset of both the placeholder and typed textView. This value defaults to UIEdgeInsetsZero.
  */
 @property (nonatomic) UIEdgeInsets textContainerInset;
+
+/** Atomically snapshots the base implementation's inset and revision. Subclasses overriding the
+ property must provide a consistent, thread-safe snapshot when using this method. */
+- (ASEditableTextInsetSnapshot)textContainerInsetSnapshot NS_SWIFT_NONISOLATED;
 
 /**
  @abstract The maximum number of lines to display. Additional lines will require scrolling.

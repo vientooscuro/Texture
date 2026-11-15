@@ -11,6 +11,8 @@
 #import <AsyncDisplayKit/ASLayout.h>
 #import <AsyncDisplayKit/ASDisplayNode+Subclasses.h>
 #import <AsyncDisplayKit/ASEditableTextNode.h>
+#import <objc/message.h>
+#import <objc/runtime.h>
 
 static BOOL CGSizeEqualToSizeWithIn(CGSize size1, CGSize size2, CGFloat delta)
 {
@@ -52,6 +54,26 @@ static BOOL CGSizeEqualToSizeWithIn(CGSize size1, CGSize size2, CGFloat delta)
 }
 @end
 
+@interface ASInsetSetterGate : NSObject
+@property (nonatomic, strong) dispatch_semaphore_t entered;
+@property (nonatomic, strong) dispatch_semaphore_t readFinished;
+@property (nonatomic) long waitResult;
+@end
+
+@implementation ASInsetSetterGate
+@end
+
+static char ASInsetSetterGateKey;
+
+static void ASBlockingTextViewInsetSetter(UITextView *view, SEL selector, UIEdgeInsets inset)
+{
+  ASInsetSetterGate *gate = objc_getAssociatedObject(view, &ASInsetSetterGateKey);
+  dispatch_semaphore_signal(gate.entered);
+  gate.waitResult = dispatch_semaphore_wait(gate.readFinished, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+  struct objc_super superInfo = { view, class_getSuperclass(object_getClass(view)) };
+  ((void (*)(struct objc_super *, SEL, UIEdgeInsets))objc_msgSendSuper)(&superInfo, selector, inset);
+}
+
 @interface ASEditableTextNodeTests : XCTestCase
 @property (nonatomic) ASEditableTextNode *editableTextNode;
 @property (nonatomic, copy) NSAttributedString *attributedText;
@@ -89,6 +111,100 @@ static BOOL CGSizeEqualToSizeWithIn(CGSize size1, CGSize size2, CGFloat delta)
 {
   ASEditableTextNode *node = [[ASEditableTextNode alloc] init];
   XCTAssertTrue([[node class] isSubclassOfClass:[ASEditableTextNode class]], @"ASEditableTextNode alloc should return an instance of ASEditableTextNode, instead returned %@", [node class]);
+}
+
+- (void)testInsetSnapshotDetectsRepeatedAndABAWrites
+{
+  ASEditableTextNode *node = [[ASEditableTextNode alloc] init];
+  UIEdgeInsets initial = UIEdgeInsetsMake(1, 2, 3, 4);
+  node.textContainerInset = initial;
+  ASEditableTextInsetSnapshot first = node.textContainerInsetSnapshot;
+  node.textContainerInset = UIEdgeInsetsMake(5, 6, 7, 8);
+  node.textContainerInset = initial;
+  ASEditableTextInsetSnapshot afterABA = node.textContainerInsetSnapshot;
+  XCTAssertTrue(UIEdgeInsetsEqualToEdgeInsets(first.inset, afterABA.inset));
+  XCTAssertNotEqual(first.revision, afterABA.revision);
+  node.textContainerInset = initial;
+  XCTAssertNotEqual(afterABA.revision, node.textContainerInsetSnapshot.revision);
+}
+
+- (void)testInsetSnapshotMatchesLivePropertyBeforeAndAfterLoading
+{
+  ASEditableTextNode *node = [[ASEditableTextNode alloc] init];
+  node.textContainerInset = UIEdgeInsetsMake(1, 2, 3, 4);
+  XCTAssertTrue(UIEdgeInsetsEqualToEdgeInsets(node.textContainerInsetSnapshot.inset, node.textContainerInset));
+  UITextView *view = node.textView;
+  XCTAssertTrue(UIEdgeInsetsEqualToEdgeInsets(view.textContainerInset, node.textContainerInsetSnapshot.inset));
+  node.textContainerInset = UIEdgeInsetsMake(5, 6, 7, 8);
+  XCTAssertTrue(UIEdgeInsetsEqualToEdgeInsets(view.textContainerInset, node.textContainerInsetSnapshot.inset));
+}
+
+- (void)testInsetSnapshotDuringColdConcurrentMeasurement
+{
+  ASEditableTextNode *node = [[ASEditableTextNode alloc] init];
+  node.attributedText = self.attributedText;
+  XCTestExpectation *writes = [self expectationWithDescription:@"inset writes completed"];
+  XCTestExpectation *measurements = [self expectationWithDescription:@"measurements completed"];
+  dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+    for (NSUInteger index = 0; index < 200; ++index) {
+      CGFloat value = index % 4;
+      node.textContainerInset = UIEdgeInsetsMake(value, value, value, value);
+      (void)node.textContainerInsetSnapshot;
+    }
+    [writes fulfill];
+  });
+  dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+    for (NSUInteger index = 0; index < 200; ++index) {
+      CGSize size = [node calculateSizeThatFits:CGSizeMake(120, CGFLOAT_MAX)];
+      XCTAssertTrue(isfinite(size.width) && isfinite(size.height));
+    }
+    [measurements fulfill];
+  });
+  [self waitForExpectations:@[writes, measurements] timeout:10.0];
+}
+
+- (void)testInsetSnapshotWhileLoadedNodeChangesOnMain
+{
+  ASEditableTextNode *node = [[ASEditableTextNode alloc] init];
+  UITextView *view = node.textView;
+  Class originalClass = object_getClass(view);
+  NSString *name = [@"ASInsetSetterTest_" stringByAppendingString:[[NSUUID UUID].UUIDString stringByReplacingOccurrencesOfString:@"-" withString:@""]];
+  Class testClass = objc_allocateClassPair(originalClass, name.UTF8String, 0);
+  XCTAssertNotNil(testClass);
+  if (testClass == Nil) return;
+  SEL setter = @selector(setTextContainerInset:);
+  Method originalMethod = class_getInstanceMethod(originalClass, setter);
+  XCTAssertNotEqual(originalMethod, (Method)NULL);
+  if (originalMethod == NULL) { objc_disposeClassPair(testClass); return; }
+  BOOL added = class_addMethod(testClass, setter, (IMP)ASBlockingTextViewInsetSetter, method_getTypeEncoding(originalMethod));
+  XCTAssertTrue(added);
+  if (!added) { objc_disposeClassPair(testClass); return; }
+  objc_registerClassPair(testClass);
+  ASInsetSetterGate *gate = [ASInsetSetterGate new];
+  gate.entered = dispatch_semaphore_create(0);
+  gate.readFinished = dispatch_semaphore_create(0);
+  objc_setAssociatedObject(view, &ASInsetSetterGateKey, gate, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  object_setClass(view, testClass);
+  __block ASEditableTextInsetSnapshot observed = {};
+  __block long entryResult = -1;
+  XCTestExpectation *reads = [self expectationWithDescription:@"snapshot read during loaded inset update"];
+  dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+    entryResult = dispatch_semaphore_wait(gate.entered, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+    if (entryResult == 0) {
+      observed = node.textContainerInsetSnapshot;
+    }
+    dispatch_semaphore_signal(gate.readFinished);
+    [reads fulfill];
+  });
+  UIEdgeInsets expected = UIEdgeInsetsMake(5, 6, 7, 8);
+  node.textContainerInset = expected;
+  [self waitForExpectations:@[reads] timeout:10.0];
+  object_setClass(view, originalClass);
+  objc_setAssociatedObject(view, &ASInsetSetterGateKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  XCTAssertEqual(entryResult, 0);
+  XCTAssertEqual(gate.waitResult, 0);
+  XCTAssertTrue(UIEdgeInsetsEqualToEdgeInsets(observed.inset, expected));
+  XCTAssertTrue(UIEdgeInsetsEqualToEdgeInsets(view.textContainerInset, node.textContainerInsetSnapshot.inset));
 }
 
 - (void)testInitialScrollStateMatchesLegacyBeforeAndAfterViewLoading
