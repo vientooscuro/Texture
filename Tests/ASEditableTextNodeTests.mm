@@ -28,6 +28,20 @@ static BOOL CGSizeEqualToSizeWithIn(CGSize size1, CGSize size2, CGFloat delta)
 }
 @end
 
+@interface ASLineLimitBlockedLayoutNode : ASEditableTextNode
+@property (nonatomic, strong) dispatch_semaphore_t measurementEntered;
+@property (nonatomic, strong) dispatch_semaphore_t continueMeasurement;
+@end
+
+@implementation ASLineLimitBlockedLayoutNode
+- (CGSize)calculateSizeThatFits:(CGSize)constrainedSize
+{
+  dispatch_semaphore_signal(self.measurementEntered);
+  dispatch_semaphore_wait(self.continueMeasurement, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+  return [super calculateSizeThatFits:constrainedSize];
+}
+@end
+
 @interface ASEditableTextNodeTests : XCTestCase
 @property (nonatomic) ASEditableTextNode *editableTextNode;
 @property (nonatomic, copy) NSAttributedString *attributedText;
@@ -123,6 +137,89 @@ static BOOL CGSizeEqualToSizeWithIn(CGSize size1, CGSize size2, CGFloat delta)
     XCTAssertEqual(dispatch_semaphore_wait(done, dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC)), 0);
     XCTAssertEqualObjects(actual, expected);
   }
+}
+
+- (void)testLineLimitCanChangeWhileTextIsMeasuredOnWorker
+{
+  ASEditableTextNode *node = [[ASEditableTextNode alloc] init];
+  node.attributedText = self.attributedText;
+  XCTestExpectation *writersDone = [self expectationWithDescription:@"line limit updates completed"];
+  XCTestExpectation *measurementsDone = [self expectationWithDescription:@"measurements completed"];
+  dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+    for (NSUInteger index = 0; index < 200; ++index) {
+      [node updateLineLimitForMeasurement:index % 4];
+      (void)node.maximumLinesToDisplay;
+    }
+    [writersDone fulfill];
+  });
+  dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+    for (NSUInteger index = 0; index < 200; ++index) {
+      CGSize size = [node calculateSizeThatFits:CGSizeMake(120, CGFLOAT_MAX)];
+      XCTAssertTrue(isfinite(size.width) && isfinite(size.height));
+    }
+    [measurementsDone fulfill];
+  });
+  [self waitForExpectations:@[writersDone, measurementsDone] timeout:10.0];
+  node.maximumLinesToDisplay = 3;
+  CGSize measured = [node calculateSizeThatFits:CGSizeMake(120, CGFLOAT_MAX)];
+  XCTAssertEqual(node.maximumLinesToDisplay, 3u);
+  // The extra line signals that text is truncated to the requested limit.
+  XCTAssertEqual(node.linesInfo.count, 4u);
+  ASEditableTextNode *reference = [[ASEditableTextNode alloc] init];
+  reference.attributedText = self.attributedText;
+  reference.maximumLinesToDisplay = 3;
+  CGSize referenceSize = [reference calculateSizeThatFits:CGSizeMake(120, CGFLOAT_MAX)];
+  XCTAssertTrue(CGSizeEqualToSize(measured, referenceSize));
+  XCTAssertEqualObjects(node.linesInfo, reference.linesInfo);
+}
+
+- (void)testLineLimitSnapshotDetectsRepeatedAndABAAssignments
+{
+  ASEditableTextNode *node = [[ASEditableTextNode alloc] init];
+  node.maximumLinesToDisplay = 1;
+  ASEditableTextLineLimitSnapshot initial = node.lineLimitSnapshot;
+  [node updateLineLimitForMeasurement:2];
+  node.maximumLinesToDisplay = 1;
+  ASEditableTextLineLimitSnapshot afterABA = node.lineLimitSnapshot;
+  XCTAssertEqual(afterABA.maximumLinesToDisplay, initial.maximumLinesToDisplay);
+  XCTAssertGreaterThan(afterABA.revision, initial.revision);
+  node.maximumLinesToDisplay = 1;
+  XCTAssertGreaterThan(node.lineLimitSnapshot.revision, afterABA.revision);
+}
+
+- (void)testLineLimitLockIsReleasedBeforeLayoutInvalidation
+{
+  ASLineLimitBlockedLayoutNode *node = [[ASLineLimitBlockedLayoutNode alloc] init];
+  node.attributedText = self.attributedText;
+  node.measurementEntered = dispatch_semaphore_create(0);
+  node.continueMeasurement = dispatch_semaphore_create(0);
+  dispatch_group_t tasks = dispatch_group_create();
+  dispatch_queue_t queue = dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
+  dispatch_group_async(tasks, queue, ^{
+    [node layoutThatFits:ASSizeRangeMake(CGSizeMake(120, 0), CGSizeMake(120, CGFLOAT_MAX))];
+  });
+  long entered = dispatch_semaphore_wait(node.measurementEntered, dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC));
+  if (entered != 0) {
+    dispatch_semaphore_signal(node.continueMeasurement);
+    XCTFail(@"layout did not enter measurement");
+    return;
+  }
+  dispatch_group_async(tasks, queue, ^{ [node updateLineLimitForMeasurement:2]; });
+  dispatch_semaphore_t valueVisible = dispatch_semaphore_create(0);
+  dispatch_group_async(tasks, queue, ^{
+    for (NSUInteger attempt = 0; attempt < 3000; ++attempt) {
+      if (node.lineLimitSnapshot.maximumLinesToDisplay == 2) {
+        dispatch_semaphore_signal(valueVisible);
+        return;
+      }
+      [NSThread sleepForTimeInterval:0.001];
+    }
+  });
+  long observed = dispatch_semaphore_wait(valueVisible, dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC));
+  dispatch_semaphore_signal(node.continueMeasurement);
+  long completed = dispatch_group_wait(tasks, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+  XCTAssertEqual(observed, 0, @"line limit lock was held while waiting for layout invalidation");
+  XCTAssertEqual(completed, 0);
 }
 
 - (void)testPublishedLinesDoNotChangeWhenSourceArrayIsMutated

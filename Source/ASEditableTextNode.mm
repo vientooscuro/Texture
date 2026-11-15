@@ -117,6 +117,9 @@
 
   // TextKit.
   AS::RecursiveMutex _textKitLock;
+  AS::Mutex _maximumLinesLock;
+  NSUInteger _maximumLinesToDisplay;
+  uint64_t _maximumLinesRevision;
   AS::Mutex _measurementLinesLock;
   NSArray<NSValue *> *_measurementLines;
   ASTextKitComponents *_textKitComponents;
@@ -248,13 +251,18 @@
 - (CGSize)calculateSizeThatFits:(CGSize)constrainedSize
 {
   ASTextKitComponents *displayedComponents = [self isDisplayingPlaceholder] ? _placeholderTextKitComponents : _textKitComponents;
+  NSUInteger maximumLines;
+  {
+    AS::MutexLocker l(_maximumLinesLock);
+    maximumLines = _maximumLinesToDisplay;
+  }
   
   CGSize textSize;
   
-  if (_maximumLinesToDisplay > 0) {
+  if (maximumLines > 0) {
     NSMutableArray<NSValue*> *linesInfo = [NSMutableArray new];
     textSize = [displayedComponents sizeForConstrainedWidth:constrainedSize.width
-                                        forMaxNumberOfLines: _maximumLinesToDisplay
+                                        forMaxNumberOfLines: maximumLines
                                                   linesInfo:&linesInfo];
     self.linesInfo = linesInfo;
   } else {
@@ -361,8 +369,34 @@
 
 - (void)setMaximumLinesToDisplay:(NSUInteger)maximumLines
 {
-  _maximumLinesToDisplay = maximumLines;
+  {
+    AS::MutexLocker l(_maximumLinesLock);
+    _maximumLinesToDisplay = maximumLines;
+    ++_maximumLinesRevision;
+  }
   [self setNeedsLayout];
+}
+
+- (void)updateLineLimitForMeasurement:(NSUInteger)maximumLines
+{
+  {
+    AS::MutexLocker l(_maximumLinesLock);
+    _maximumLinesToDisplay = maximumLines;
+    ++_maximumLinesRevision;
+  }
+  [self setNeedsLayout];
+}
+
+- (NSUInteger)maximumLinesToDisplay
+{
+  AS::MutexLocker l(_maximumLinesLock);
+  return _maximumLinesToDisplay;
+}
+
+- (ASEditableTextLineLimitSnapshot)lineLimitSnapshot
+{
+  AS::MutexLocker l(_maximumLinesLock);
+  return { _maximumLinesToDisplay, _maximumLinesRevision };
 }
 
 #pragma mark -

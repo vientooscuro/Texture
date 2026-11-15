@@ -16,6 +16,11 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol ASEditableTextNodeDelegate;
 @class ASTextKitComponents;
 
+typedef struct {
+  NSUInteger maximumLinesToDisplay;
+  uint64_t revision;
+} ASEditableTextLineLimitSnapshot;
+
 /**
  @abstract Implements a node that supports text editing.
  @discussion Does not support layer backing.
@@ -106,6 +111,14 @@ NS_ASSUME_NONNULL_BEGIN
  @default 0 (No limit)
  */
 @property (nonatomic) NSUInteger maximumLinesToDisplay;
+
+/** Returns the stored line limit and its revision atomically. Every assignment advances the revision.
+ Subclasses overriding the property must also override this method with an equivalent thread-safe snapshot. */
+- (ASEditableTextLineLimitSnapshot)lineLimitSnapshot NS_SWIFT_NONISOLATED;
+
+/** Updates the base implementation's line limit from any thread. This bypasses overrides of the property setter.
+ Use only where the concrete node type is known not to override that setter. */
+- (void)updateLineLimitForMeasurement:(NSUInteger)maximumLines NS_SWIFT_NONISOLATED;
 
 /**
   @abstract Indicates whether the receiver's text view is the first responder, and thus has the keyboard visible and is prepared for editing by the user.
